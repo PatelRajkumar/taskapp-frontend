@@ -73,7 +73,7 @@ export const ProtectedRoute = ({
   // Not authenticated - redirect to login
   if (!isAuthenticated) {
     // Save the attempted URL for redirecting after login
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
   // Check permission requirements if specified

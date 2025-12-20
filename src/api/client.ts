@@ -132,7 +132,7 @@ apiClient.interceptors.response.use(
       if (!refreshToken) {
         // No refresh token available, logout user
         clearAuthData();
-        window.location.href = '/login';
+        window.location.href = '/auth/login';
         return Promise.reject(error);
       }
 
@@ -162,7 +162,7 @@ apiClient.interceptors.response.use(
         // Refresh failed, logout user
         processQueue(refreshError, null);
         clearAuthData();
-        window.location.href = '/login';
+        window.location.href = '/auth/login';
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

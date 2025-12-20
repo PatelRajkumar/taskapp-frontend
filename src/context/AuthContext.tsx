@@ -9,7 +9,7 @@ import {
   clearAuthData,
 } from '@/interceptors';
 import type { LoginRequest, RegisterRequest, UserResponse } from '@/interceptors/types/auth.types';
-import { getStorageItem, setStorageItem, removeStorageItem } from '@/utils/storage';
+import { getStorageItem, setStorageItem } from '@/utils/storage';
 import { STORAGE_KEYS } from '@/utils/constants';
 
 /**
@@ -24,6 +24,10 @@ interface AuthContextState {
   logout: () => void;
   updateUser: (user: UserResponse) => void;
   refreshUser: () => Promise<void>;
+  hasPermission: (permission: string) => boolean;
+  hasAnyPermission: (permissions: string[]) => boolean;
+  hasAllPermissions: (permissions: string[]) => boolean;
+  userPermissions: string[];
 }
 
 /**
@@ -38,6 +42,10 @@ export const AuthContext = createContext<AuthContextState>({
   logout: () => {},
   updateUser: () => {},
   refreshUser: async () => {},
+  hasPermission: () => false,
+  hasAnyPermission: () => false,
+  hasAllPermissions: () => false,
+  userPermissions: [],
 });
 
 /**
@@ -59,8 +67,43 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const isAuthenticated = !!user;
 
   /**
+   * Get user's permission codes as array
+   */
+  const userPermissions = user?.permissions?.map((p) => p.code) || [];
+
+  /**
+   * Check if user has a specific permission
+   */
+  const hasPermission = useCallback(
+    (permission: string): boolean => {
+      return userPermissions.includes(permission);
+    },
+    [userPermissions]
+  );
+
+  /**
+   * Check if user has any of the specified permissions (OR logic)
+   */
+  const hasAnyPermission = useCallback(
+    (permissions: string[]): boolean => {
+      return permissions.some((permission) => userPermissions.includes(permission));
+    },
+    [userPermissions]
+  );
+
+  /**
+   * Check if user has all of the specified permissions (AND logic)
+   */
+  const hasAllPermissions = useCallback(
+    (permissions: string[]): boolean => {
+      return permissions.every((permission) => userPermissions.includes(permission));
+    },
+    [userPermissions]
+  );
+
+  /**
    * Initialize authentication state on mount
-   * Checks if user has valid tokens and fetches user data
+   * Checks if user has valid tokens and fetches user data with permissions
    */
   useEffect(() => {
     const initializeAuth = async () => {
@@ -80,7 +123,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
           setUser(cachedUser);
         }
 
-        // Validate tokens by fetching current user from backend
+        // Validate tokens by fetching current user from backend (with permissions)
         try {
           const currentUser = await getCurrentUser();
           setUser(currentUser);
@@ -143,7 +186,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
         toast.success('Account created successfully! Please check your email to verify your account.');
 
         // Navigate to login
-        navigate('/login');
+        navigate('/auth/login');
       } catch (error) {
         // Error is already thrown from API with user-friendly message
         throw error;
@@ -169,7 +212,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     toast.success('Logged out successfully');
 
     // Navigate to login
-    navigate('/login');
+    navigate('/auth/login');
   }, [navigate]);
 
   /**
@@ -205,6 +248,10 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
     logout,
     updateUser,
     refreshUser,
+    hasPermission,
+    hasAnyPermission,
+    hasAllPermissions,
+    userPermissions,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -18,7 +18,7 @@ interface PublicRouteProps {
  * 
  * @example
  * <Route
- *   path="/login"
+ *   path="/auth/login"
  *   element={
  *     <PublicRoute>
  *       <LoginPage />

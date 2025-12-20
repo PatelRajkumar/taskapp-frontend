@@ -4,10 +4,18 @@ import { PublicRoute } from '@/components/auth/PublicRoute';
 import { Container, Typography, Box, Button } from '@mui/material';
 import { useAuth } from '@/hooks/useAuth';
 
-// Pages
+// Auth Pages
+import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
+import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
+import ResetPasswordPage from './pages/auth/ResetPasswordPage';
+
+// Protected Pages
 import DashboardPage from './pages/DashboardPage';
 import UserManagementPage from './pages/UserManagementPage';
 import ProjectManagementPage from './pages/ProjectManagementPage';
+
+// Error Pages
 import UnauthorizedPage from './pages/UnauthorizedPage';
 import NotFoundPage from './pages/NotFoundPage';
 
@@ -36,10 +44,10 @@ function HomePage() {
           Project Management Made Simple
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
-          Phase 3 Complete! 🎉
+          Phase 4 Complete! 🎉
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          Permission-Based Access Control (PBAC)
+          Complete Authentication Flow with React Hook Form + Zod
         </Typography>
 
         {isAuthenticated && (
@@ -76,11 +84,11 @@ function HomePage() {
             </>
           ) : (
             <>
-              <Button component={Link} to="/login" variant="contained" size="large">
+              <Button component={Link} to="/auth/login" variant="contained" size="large">
                 Login
               </Button>
-              <Button component={Link} to="/register" variant="outlined" size="large">
-                Register
+              <Button component={Link} to="/auth/register" variant="outlined" size="large">
+                Sign Up
               </Button>
             </>
           )}
@@ -91,47 +99,7 @@ function HomePage() {
 }
 
 /**
- * Temporary placeholder for Login page
- * Will be replaced with actual LoginPage in Phase 4
- */
-function LoginPlaceholder() {
-  return (
-    <Container maxWidth="sm" sx={{ py: 4 }}>
-      <Typography variant="h3" gutterBottom>
-        Login Page
-      </Typography>
-      <Typography variant="body1" color="text.secondary">
-        Login page will be implemented in Phase 4.
-      </Typography>
-      <Button component={Link} to="/" sx={{ mt: 2 }}>
-        Back to Home
-      </Button>
-    </Container>
-  );
-}
-
-/**
- * Temporary placeholder for Register page
- * Will be replaced with actual RegisterPage in Phase 4
- */
-function RegisterPlaceholder() {
-  return (
-    <Container maxWidth="sm" sx={{ py: 4 }}>
-      <Typography variant="h3" gutterBottom>
-        Register Page
-      </Typography>
-      <Typography variant="body1" color="text.secondary">
-        Register page will be implemented in Phase 4.
-      </Typography>
-      <Button component={Link} to="/" sx={{ mt: 2 }}>
-        Back to Home
-      </Button>
-    </Container>
-  );
-}
-
-/**
- * App Component with Permission-Based Route Configuration
+ * App Component with Complete Route Configuration
  */
 function App() {
   return (
@@ -139,20 +107,36 @@ function App() {
       {/* Public Routes */}
       <Route path="/" element={<HomePage />} />
 
-      {/* Public Routes (redirect to dashboard if authenticated) */}
+      {/* Authentication Routes (redirect to dashboard if already authenticated) */}
       <Route
-        path="/login"
+        path="/auth/login"
         element={
           <PublicRoute>
-            <LoginPlaceholder />
+            <LoginPage />
           </PublicRoute>
         }
       />
       <Route
-        path="/register"
+        path="/auth/register"
         element={
           <PublicRoute>
-            <RegisterPlaceholder />
+            <RegisterPage />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/auth/forgot-password"
+        element={
+          <PublicRoute>
+            <ForgotPasswordPage />
+          </PublicRoute>
+        }
+      />
+      <Route
+        path="/auth/reset-password"
+        element={
+          <PublicRoute>
+            <ResetPasswordPage />
           </PublicRoute>
         }
       />

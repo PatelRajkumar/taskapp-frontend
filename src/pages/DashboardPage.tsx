@@ -11,6 +11,7 @@ import { Button } from '@/components/common';
 const DashboardPage = () => {
   const { user, logout } = useAuth();
   const { hasPermission, userPermissions } = usePermissions();
+  console.log("User permissions",userPermissions);
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -54,6 +55,7 @@ const DashboardPage = () => {
 
       <Paper sx={{ p: 3, mt: 3 }}>
         <Typography variant="h5" gutterBottom>
+
           Your Permissions ({userPermissions.length})
         </Typography>
         <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
