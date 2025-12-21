@@ -38,3 +38,9 @@ export type {
 } from './types/auth.types';
 
 export { isApiErrorResponse } from './types/auth.types';
+
+// Export User types
+export type {
+    UpdateUserRequest,
+    ChangePasswordRequest,
+} from './types/user.types';

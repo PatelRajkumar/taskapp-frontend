@@ -9,6 +9,11 @@ import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import ForgotPasswordPage from './pages/auth/ForgotPasswordPage';
 import ResetPasswordPage from './pages/auth/ResetPasswordPage';
+import VerifyEmailPage from './pages/auth/VerifyEmailPage';
+import ResendVerificationPage from './pages/auth/ResendVerificationPage';
+
+// Profile Pages
+import ProfilePage from './pages/profile/ProfilePage';
 
 // Protected Pages
 import DashboardPage from './pages/DashboardPage';
@@ -44,10 +49,10 @@ function HomePage() {
           Project Management Made Simple
         </Typography>
         <Typography variant="body1" color="text.secondary" sx={{ mt: 2 }}>
-          Phase 4 Complete! 🎉
+          Phase 5 Complete! 🎉
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-          Complete Authentication Flow with React Hook Form + Zod
+          Email Verification + User Profile Management
         </Typography>
 
         {isAuthenticated && (
@@ -74,6 +79,9 @@ function HomePage() {
             <>
               <Button component={Link} to="/dashboard" variant="contained" size="large">
                 Dashboard
+              </Button>
+              <Button component={Link} to="/profile" variant="outlined" size="large">
+                My Profile
               </Button>
               <Button component={Link} to="/users" variant="outlined" size="large">
                 User Management
@@ -140,6 +148,17 @@ function App() {
           </PublicRoute>
         }
       />
+      
+      {/* Email Verification Routes (can be accessed without auth) */}
+      <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
+      <Route
+        path="/auth/resend-verification"
+        element={
+          <PublicRoute>
+            <ResendVerificationPage />
+          </PublicRoute>
+        }
+      />
 
       {/* Protected Routes (authentication required only) */}
       <Route
@@ -147,6 +166,16 @@ function App() {
         element={
           <ProtectedRoute>
             <DashboardPage />
+          </ProtectedRoute>
+        }
+      />
+
+      {/* Profile Route (authentication required) */}
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
           </ProtectedRoute>
         }
       />
