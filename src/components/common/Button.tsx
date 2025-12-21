@@ -1,5 +1,5 @@
 import { Button as MuiButton, ButtonProps as MuiButtonProps, CircularProgress } from '@mui/material';
-import { forwardRef } from 'react';
+import { forwardRef, ElementType } from 'react';
 
 export interface ButtonProps extends Omit<MuiButtonProps, 'variant'> {
     /**
@@ -17,19 +17,35 @@ export interface ButtonProps extends Omit<MuiButtonProps, 'variant'> {
      * @default false
      */
     fullWidth?: boolean;
+    /**
+     * Component to render as (e.g., Link from react-router-dom)
+     */
+    component?: ElementType;
+    /**
+     * Additional props for the component (e.g., 'to' for Link)
+     */
+    [key: string]: any;
 }
 
 /**
  * Custom Button component wrapping MUI Button with consistent styling
+ * Supports React Router Link component via 'component' prop
  * 
- * @example
+ * @example Basic usage
  * <Button variant="primary" onClick={handleClick}>
  *   Click Me
  * </Button>
  * 
- * @example
+ * @example With loading state
  * <Button variant="outlined" loading={isLoading}>
  *   Submit
+ * </Button>
+ * 
+ * @example With React Router Link
+ * import { Link } from 'react-router-dom';
+ * 
+ * <Button component={Link} to="/dashboard" variant="primary">
+ *   Go to Dashboard
  * </Button>
  */
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
