@@ -10,12 +10,11 @@ import {
   TextField,
   FormControlLabel,
   Checkbox,
-  Alert,
   InputAdornment,
   IconButton,
 } from '@mui/material';
 import { Visibility, VisibilityOff, Lock } from '@mui/icons-material';
-import { Button } from '@/components/common';
+import { Button, Alert } from '@/components/common';
 import { useAuth } from '@/hooks/useAuth';
 import { loginSchema, type LoginFormData } from '@/schemas/auth.schemas';
 

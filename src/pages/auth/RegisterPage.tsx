@@ -10,7 +10,6 @@ import {
   TextField,
   FormControlLabel,
   Checkbox,
-  Alert,
   InputAdornment,
   IconButton,
   List,
@@ -25,7 +24,7 @@ import {
   Check,
   Close,
 } from '@mui/icons-material';
-import { Button } from '@/components/common';
+import { Button, Alert } from '@/components/common';
 import { useAuth } from '@/hooks/useAuth';
 import { registerSchema, type RegisterFormData } from '@/schemas/auth.schemas';
 

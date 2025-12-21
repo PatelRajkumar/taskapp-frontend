@@ -8,10 +8,9 @@ import {
   Paper,
   Typography,
   TextField,
-  Alert,
 } from '@mui/material';
 import { Email, Check } from '@mui/icons-material';
-import { Button } from '@/components/common';
+import { Button, Alert } from '@/components/common';
 import { forgotPassword } from '@/interceptors';
 import { forgotPasswordSchema, type ForgotPasswordFormData } from '@/schemas/auth.schemas';
 

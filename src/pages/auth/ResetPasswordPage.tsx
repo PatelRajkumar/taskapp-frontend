@@ -8,12 +8,11 @@ import {
   Paper,
   Typography,
   TextField,
-  Alert,
   InputAdornment,
   IconButton,
 } from '@mui/material';
 import { Visibility, VisibilityOff, VpnKey, Check } from '@mui/icons-material';
-import { Button } from '@/components/common';
+import { Button, Alert } from '@/components/common';
 import { resetPassword } from '@/interceptors';
 import { resetPasswordSchema, type ResetPasswordFormData } from '@/schemas/auth.schemas';
 
