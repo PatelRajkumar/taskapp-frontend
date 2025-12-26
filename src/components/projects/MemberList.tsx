@@ -40,7 +40,6 @@ export interface MemberListProps {
    */
   onEditRole?: MemberCardProps['onEditRole'];
   onRemove?: MemberCardProps['onRemove'];
-  onTransferOwnership?: MemberCardProps['onTransferOwnership'];
   /**
    * Whether to show actions on cards
    * @default true
@@ -85,7 +84,6 @@ export const MemberList = ({
   emptyDescription,
   onEditRole,
   onRemove,
-  onTransferOwnership,
   showActions = true,
   skeletonCount = 5,
 }: MemberListProps) => {
@@ -146,7 +144,6 @@ export const MemberList = ({
           currentUserRole={currentUserRole}
           onEditRole={onEditRole}
           onRemove={onRemove}
-          onTransferOwnership={onTransferOwnership}
           showActions={showActions}
         />
       ))}

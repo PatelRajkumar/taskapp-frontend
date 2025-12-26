@@ -70,7 +70,7 @@ export const useCreateProject = (
         onSuccess: (data, variables) => {
             // Invalidate project lists to show new project
             queryClient.invalidateQueries({ queryKey: projectKeys.lists() });
-
+                
             // Show success toast
             toast.success(`Project "${data.name}" created successfully!`);
 

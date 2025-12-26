@@ -47,10 +47,6 @@ export interface MemberCardProps {
    */
   onRemove?: (member: ProjectMemberSummary) => void;
   /**
-   * Callback when transfer ownership is clicked
-   */
-  onTransferOwnership?: (member: ProjectMemberSummary) => void;
-  /**
    * Whether to show action menu
    * @default true
    */
@@ -117,7 +113,6 @@ export const MemberCard = ({
   currentUserRole,
   onEditRole,
   onRemove,
-  onTransferOwnership,
   showActions = true,
 }: MemberCardProps) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -146,16 +141,11 @@ export const MemberCard = ({
     onRemove?.(member);
   };
 
-  const handleTransferOwnership = () => {
-    console.log('[MemberCard] Transfer ownership clicked for:', member.user.name);
-    handleMenuClose();
-    onTransferOwnership?.(member);
-  };
 
   // Determine available actions based on permissions
-  const canEditRole = member.permissions.canManageMembers && member.role !== 'OWNER';
-  const canRemove = member.permissions.canManageMembers;
-  const canTransferOwnership = member.permissions.canTransferOwnership && member.role !== 'OWNER';
+  const canEditRole = currentUserRole === 'OWNER' || (currentUserRole === 'ADMIN' && member.role !== 'OWNER' && member.role !== 'ADMIN');
+  const canRemove = currentUserRole === 'OWNER' || (currentUserRole === 'ADMIN' && member.role !== 'OWNER' && member.role !== 'ADMIN');
+  const canTransferOwnership = currentUserRole === 'OWNER' && member.role === 'ADMIN';
 
   const hasAnyAction = canEditRole || canRemove || canTransferOwnership;
 
@@ -221,15 +211,6 @@ export const MemberCard = ({
                   <Edit fontSize="small" />
                 </ListItemIcon>
                 <ListItemText>Change Role</ListItemText>
-              </MenuItem>
-            )}
-
-            {canTransferOwnership && (
-              <MenuItem onClick={handleTransferOwnership}>
-                <ListItemIcon>
-                  <SwapHoriz fontSize="small" />
-                </ListItemIcon>
-                <ListItemText>Transfer Ownership</ListItemText>
               </MenuItem>
             )}
 

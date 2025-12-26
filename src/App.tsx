@@ -23,6 +23,7 @@ import ProjectManagementPage from './pages/ProjectManagementPage';
 // Error Pages
 import UnauthorizedPage from './pages/UnauthorizedPage';
 import NotFoundPage from './pages/NotFoundPage';
+import { ProjectDetailPage, ProjectListPage } from './pages/projects';
 
 /**
  * Home Page
@@ -190,15 +191,23 @@ function App() {
         }
       />
 
+       {/* Project Routes */}
       <Route
         path="/projects"
         element={
           <ProtectedRoute requiredPermission="PROJECT_READ">
-            <ProjectManagementPage />
+            <ProjectListPage />
           </ProtectedRoute>
         }
       />
-
+      <Route
+        path="/projects/:projectId"
+        element={
+          <ProtectedRoute requiredPermission="PROJECT_READ">
+            <ProjectDetailPage />
+          </ProtectedRoute>
+        }
+      />
       {/* Error Routes */}
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
       <Route path="*" element={<NotFoundPage />} />

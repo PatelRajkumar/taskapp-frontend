@@ -25,32 +25,26 @@ import {
 } from '@/schemas/project.schema';
 import type { ProjectResponse } from '@/interceptors/types/project.types';
 
-export interface ProjectFormProps {
-  /**
-   * Mode of the form
-   */
-  mode: 'create' | 'edit';
-  /**
-   * Existing project data (for edit mode)
-   */
-  project?: ProjectResponse;
-  /**
-   * Callback when form is submitted
-   */
-  onSubmit: (data: CreateProjectData | UpdateProjectData) => void;
-  /**
-   * Callback when cancel is clicked
-   */
+// Separate interfaces for create and edit modes
+export interface ProjectFormCreateProps {
+  mode: 'create';
+  project?: never;
+  onSubmit: (data: CreateProjectData) => void;
   onCancel?: () => void;
-  /**
-   * Whether form is submitting
-   */
   isSubmitting?: boolean;
-  /**
-   * Error message to display
-   */
   error?: string | null;
 }
+
+export interface ProjectFormEditProps {
+  mode: 'edit';
+  project: ProjectResponse;
+  onSubmit: (data: UpdateProjectData) => void;
+  onCancel?: () => void;
+  isSubmitting?: boolean;
+  error?: string | null;
+}
+
+export type ProjectFormProps = ProjectFormCreateProps | ProjectFormEditProps;
 
 /**
  * ProjectForm - Reusable form for creating/editing projects
@@ -80,14 +74,10 @@ export interface ProjectFormProps {
  *   isSubmitting={isPending}
  * />
  */
-export const ProjectForm = ({
-  mode,
-  project,
-  onSubmit,
-  onCancel,
-  isSubmitting = false,
-  error = null,
-}: ProjectFormProps) => {
+export const ProjectForm = (props: ProjectFormProps) => {
+  const { mode, onSubmit, onCancel, isSubmitting = false, error = null } = props;
+  const project = mode === 'edit' ? props.project : undefined;
+
   console.log('[ProjectForm] Rendering in', mode, 'mode');
 
   const {
@@ -111,7 +101,7 @@ export const ProjectForm = ({
 
   const handleFormSubmit = (data: CreateProjectData | UpdateProjectData) => {
     console.log('[ProjectForm] Form submitted:', data);
-    onSubmit(data);
+    onSubmit(data as any); // Type assertion needed due to discriminated union
   };
 
   return (
@@ -124,7 +114,7 @@ export const ProjectForm = ({
           <Input
             {...field}
             label="Project Name"
-            required
+            required={mode === 'create'}
             autoFocus
             disabled={isSubmitting}
             error={!!errors.name}

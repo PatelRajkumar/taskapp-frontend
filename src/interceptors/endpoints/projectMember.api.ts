@@ -171,7 +171,7 @@ export const transferOwnership = async (
     data: TransferOwnershipRequest
 ): Promise<void> => {
     try {
-        await apiClient.post(`/projects/${projectId}/transfer-ownership`, data);
+        await apiClient.post(`/projects/${projectId}/members/transfer-ownership`, data);
     } catch (error) {
         const message = getErrorMessage(error);
         throw new Error(message);
