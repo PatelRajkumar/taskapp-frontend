@@ -18,6 +18,40 @@ export {
     getCurrentUser,
 } from './endpoints/auth.api';
 
+// Export User API functions
+export {
+    searchUsers,
+    getAllUsers,
+    getUserById,
+} from './endpoints/user.api';
+
+// Export Project API functions
+export {
+    createProject,
+    updateProject,
+    getProjectById,
+    getProjectByKey,
+    deleteProject,
+    archiveProject,
+    restoreProject,
+    getMyProjects,
+    getArchivedProjects,
+    getPublicProjects,
+    searchProjects,
+    checkProjectKeyExists,
+} from './endpoints/project.api';
+
+// Export Project Member API functions
+export {
+    addProjectMember,
+    removeMember,
+    updateMemberRole,
+    transferOwnership,
+    leaveProject,
+    getProjectMembers,
+    getProjectMember,
+} from './endpoints/projectMember.api';
+
 // Export Auth types
 export type {
     UserResponse,
@@ -44,3 +78,22 @@ export type {
     UpdateUserRequest,
     ChangePasswordRequest,
 } from './types/user.types';
+
+// Export Project types
+export type {
+    ProjectResponse,
+    CreateProjectRequest,
+    UpdateProjectRequest,
+    PageResponse,
+    PageableRequest,
+} from './types/project.types';
+
+// Export Project Member types
+export type {
+    ProjectMemberResponse,
+    ProjectMemberSummary,
+    ProjectMemberAddRequest,
+    ProjectMemberUpdateRoleRequest,
+    TransferOwnershipRequest,
+    ProjectRole,
+} from './types/projectMember.types';

@@ -165,7 +165,7 @@ export interface ApiErrorResponse {
   status: number;
   error: string;
   message: string;
-  errorCod: string;
+  errorCode: string;
   path?: string;
   details?: Record<string, Object>; // Field validation errors
 }
