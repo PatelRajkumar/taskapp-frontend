@@ -3,64 +3,63 @@
  * Detailed view of a single project with tabs
  */
 
-import { useState } from 'react';
-import { useParams, useNavigate, Link as RouterLink } from 'react-router-dom';
+import { Button, ErrorState, LoadingState } from '@/components/common';
+import { AddMemberDialog, MemberList, ProjectForm, TransferOwnershipDialog } from '@/components/projects';
 import {
-  Container,
-  Typography,
+  useAddMember,
+  useArchiveProject,
+  useDeleteProject,
+  useRemoveMember,
+  useRestoreProject,
+  useTransferOwnership,
+  useUpdateMemberRole,
+  useUpdateProject
+} from '@/hooks/useProjectMutations';
+import { useProject, useProjectMembers } from '@/hooks/useProjects';
+import type { ProjectVisibility, UpdateProjectRequest } from '@/interceptors/types/project.types';
+import type { ProjectMemberAddRequest, ProjectMemberSummary, ProjectMemberUpdateRoleRequest, ProjectRole, TransferOwnershipRequest } from '@/interceptors/types/projectMember.types';
+import type { UpdateProjectData } from '@/schemas/project.schema';
+import type { AddProjectMemberData, TransferOwnershipData, UpdateProjectMemberRoleData } from '@/schemas/projectMember.schema';
+import {
+  Archive,
+  Close,
+  Delete,
+  Edit,
+  Folder,
+  Lock,
+  MoreVert,
+  NavigateNext,
+  People,
+  PersonAdd,
+  Public,
+  SwapHoriz,
+  Unarchive,
+} from '@mui/icons-material';
+import {
   Box,
-  Tabs,
-  Tab,
+  Breadcrumbs,
   Chip,
+  Container,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  Grid,
   IconButton,
-  Menu,
-  MenuItem,
+  Link,
   ListItemIcon,
   ListItemText,
-  Breadcrumbs,
-  Link,
+  Menu,
+  MenuItem,
   Paper,
-  Grid,
-  Divider,
-  Dialog,
-  DialogTitle,
-  DialogContent,
+  Tab,
+  Tabs,
+  Typography,
 } from '@mui/material';
-import {
-  MoreVert,
-  Edit,
-  Archive,
-  Unarchive,
-  Delete,
-  Lock,
-  Public,
-  People,
-  Folder,
-  NavigateNext,
-  PersonAdd,
-  Close,
-  SwapHoriz,
-} from '@mui/icons-material';
 import { formatDistanceToNow } from 'date-fns';
-import toast from 'react-hot-toast';
-import { Button, LoadingState, ErrorState } from '@/components/common';
-import { ProjectForm, MemberList, AddMemberDialog, TransferOwnershipDialog } from '@/components/projects';
-import { useProject, useProjectMembers } from '@/hooks/useProjects';
-import {
-  useUpdateProject,
-  useDeleteProject,
-  useArchiveProject,
-  useRestoreProject,
-  useAddMember,
-  useUpdateMemberRole,
-  useRemoveMember,
-  useTransferOwnership,
-} from '@/hooks/useProjectMutations';
-import { useAuth } from '@/hooks/useAuth';
-import type { ProjectResponse, UpdateProjectRequest, ProjectVisibility } from '@/interceptors/types/project.types';
-import type { UpdateProjectData } from '@/schemas/project.schema';
-import type { AddProjectMemberData, UpdateProjectMemberRoleData, TransferOwnershipData } from '@/schemas/projectMember.schema';
-import type { ProjectMemberSummary, ProjectMemberAddRequest, ProjectMemberUpdateRoleRequest, TransferOwnershipRequest, ProjectRole } from '@/interceptors/types/projectMember.types';
+import { useState } from 'react';
+import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
+import { EditMemberRoleDialog } from '@/components/projects';
 
 type TabValue = 'overview' | 'members' | 'settings';
 
@@ -87,6 +86,8 @@ const ProjectDetailPage = () => {
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
   const [transferOwnershipDialogOpen, setTransferOwnershipDialogOpen] = useState(false);
+  const [editingMember, setEditingMember] = useState<ProjectMemberSummary | null>(null);
+
 
   // Menu state
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -123,6 +124,17 @@ const ProjectDetailPage = () => {
       // toast.success('Member added successfully!');
     },
   });
+
+
+  const { mutate: updateMemberRole, isPending: isUpdatingRole } = useUpdateMemberRole(
+    projectId || '',
+    editingMember?.user.id || '',
+    {
+      onSuccess: () => {
+        setEditingMember(null);
+      },
+    }
+  );
 
   const { mutate: removeMember } = useRemoveMember(projectId || '');
 
@@ -189,6 +201,20 @@ const ProjectDetailPage = () => {
     if (confirm(`Remove ${member.user.name} from this project?`)) {
       removeMember(member.user.id);
     }
+  };
+
+  // Add handler:
+  const handleEditRole = (member: ProjectMemberSummary) => {
+    console.log('[ProjectDetailPage] Edit role for:', member.user.name);
+    setEditingMember(member);
+  };
+
+  const handleUpdateMemberRole = (data: UpdateProjectMemberRoleData) => {
+    if (!editingMember) return;
+    const requestData: ProjectMemberUpdateRoleRequest = {
+      role: data.role as ProjectRole,
+    };
+    updateMemberRole(requestData);
   };
 
   const handleTransferOwnership = () => {
@@ -431,6 +457,7 @@ const ProjectDetailPage = () => {
             error={membersError?.message}
             emptyMessage="No members yet"
             emptyDescription="Add members to collaborate on this project"
+            onEditRole={canManageMembers ? handleEditRole : undefined}
             onRemove={canManageMembers ? handleRemoveMember : undefined}
             showActions={canManageMembers}
           />
@@ -512,6 +539,14 @@ const ProjectDetailPage = () => {
         isSubmitting={isTransferring}
         projectName={project.name}
         members={members}
+      />
+      {/* Edit Member Role Dialog */}
+      <EditMemberRoleDialog
+        open={!!editingMember}
+        onClose={() => setEditingMember(null)}
+        onSubmit={handleUpdateMemberRole}
+        isSubmitting={isUpdatingRole}
+        member={editingMember}
       />
     </Container>
   );

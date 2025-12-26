@@ -21,6 +21,9 @@ export type { MemberListProps } from './MemberList';
 export { AddMemberDialog } from './AddMemberDialog';
 export type { AddMemberDialogProps } from './AddMemberDialog';
 
+export { EditMemberRoleDialog } from './EditMemberRoleDialog';
+export type { EditMemberRoleDialogProps } from './EditMemberRoleDialog';
+
 export { TransferOwnershipDialog } from './TransferOwnershipDialog';
 export type { TransferOwnershipDialogProps } from './TransferOwnershipDialog';
 
