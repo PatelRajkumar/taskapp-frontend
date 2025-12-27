@@ -35,13 +35,13 @@ export const createIssueSchema = z.object({
     .enum([ISSUE_TYPE.TASK, ISSUE_TYPE.BUG], {
       message: 'Type must be either TASK or BUG',
     })
-    .default(ISSUE_TYPE.TASK),
+    ,
 
   priority: z
     .enum([ISSUE_PRIORITY.LOW, ISSUE_PRIORITY.MEDIUM, ISSUE_PRIORITY.HIGH], {
       message: 'Priority must be LOW, MEDIUM, or HIGH',
     })
-    .default(ISSUE_PRIORITY.MEDIUM),
+    ,
 
   dueDate: z
     .string()
