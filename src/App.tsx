@@ -24,6 +24,7 @@ import ProjectManagementPage from './pages/ProjectManagementPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 import NotFoundPage from './pages/NotFoundPage';
 import { ProjectDetailPage, ProjectListPage } from './pages/projects';
+import { IssueListPage } from './pages/issues';
 
 /**
  * Home Page
@@ -90,6 +91,9 @@ function HomePage() {
               <Button component={Link} to="/projects" variant="outlined" size="large">
                 Project Management
               </Button>
+              <Button component={Link} to="/issues" variant="outlined" size="large">
+                Issues
+              </Button>
             </>
           ) : (
             <>
@@ -149,7 +153,7 @@ function App() {
           </PublicRoute>
         }
       />
-      
+
       {/* Email Verification Routes (can be accessed without auth) */}
       <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
       <Route
@@ -191,7 +195,7 @@ function App() {
         }
       />
 
-       {/* Project Routes */}
+      {/* Project Routes */}
       <Route
         path="/projects"
         element={
@@ -205,6 +209,15 @@ function App() {
         element={
           <ProtectedRoute requiredPermission="PROJECT_READ">
             <ProjectDetailPage />
+          </ProtectedRoute>
+        }
+      />
+      {/* Issue Routes */}
+      <Route
+        path="/issues"
+        element={
+          <ProtectedRoute>
+            <IssueListPage />
           </ProtectedRoute>
         }
       />
