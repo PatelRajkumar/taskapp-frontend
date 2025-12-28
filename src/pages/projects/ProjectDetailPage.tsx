@@ -77,6 +77,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 
 type TabValue = 'overview' | 'members' | 'issues' | 'settings';
@@ -359,14 +360,22 @@ const ProjectDetailPage = () => {
   };
 
   const handleIssueStatusChangeFromCard = (issue: IssueSummary, newStatus: IssueStatus) => {
-    console.log('[ProjectDetailPage] Status change from card:', issue.key, newStatus);
-    // Need to use the issue ID for status update
-    // updateIssueStatusMutation({ newStatus });
-    updateIssueStatus(projectId ?? "", issue.id, { newStatus }).then(() => {
-      queryClient.invalidateQueries({ queryKey: issueKeys.list(projectId ?? "") });
-      // toast.success('Status updated!');
+  console.log('[ProjectDetailPage] Status change from card:', issue.key, newStatus);
+  
+  // Call API directly with proper error handling
+  updateIssueStatus(projectId ?? "", issue.id, { newStatus })
+    .then(() => {
+      // Invalidate queries to refresh data
+      queryClient.invalidateQueries({ 
+        queryKey: ['issues', 'project', projectId] 
+      });
+      toast.success(`Status updated to ${newStatus}`);
+    })
+    .catch((error) => {
+      console.error('[ProjectDetailPage] Failed to update status:', error);
+      toast.error(error.message || 'Failed to update status');
     });
-  };
+};
 
   const handleIssuePageChange = (_: React.ChangeEvent<unknown>, newPage: number) => {
     console.log('[ProjectDetailPage] Issue page changed to:', newPage);
@@ -641,6 +650,7 @@ const ProjectDetailPage = () => {
             onStatusChange={handleIssueStatusChangeFromCard}
             showActions={true}
             showStatusDropdown={true}
+            
           />
 
           {/* Pagination */}
