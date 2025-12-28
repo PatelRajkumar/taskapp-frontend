@@ -33,38 +33,18 @@ import { IssueTypeBadge } from './IssueTypeBadge';
 import type { IssueStatus } from '@/utils/constants';
 
 export interface IssueCardProps {
-  /**
-   * Issue data to display
-   */
   issue: IssueSummary;
-  /**
-   * Callback when card is clicked
-   */
   onClick?: (issue: IssueSummary) => void;
-  /**
-   * Callback when edit is clicked
-   */
   onEdit?: (issue: IssueSummary) => void;
-  /**
-   * Callback when delete is clicked
-   */
   onDelete?: (issue: IssueSummary) => void;
-  /**
-   * Callback when status changes
-   */
   onStatusChange?: (issue: IssueSummary, newStatus: IssueStatus) => void;
-  /**
-   * Whether to show action menu
-   * @default true
-   */
   showActions?: boolean;
-  /**
-   * Whether to show status dropdown
-   * @default true
-   */
   showStatusDropdown?: boolean;
+  // NEW: Permission overrides (optional)
+  canEdit?: boolean;
+  canDelete?: boolean;
+  canChangeStatus?: boolean;
 }
-
 /**
  * IssueCard - Displays issue information in a card format
  * 
@@ -93,6 +73,9 @@ export const IssueCard = ({
   onStatusChange,
   showActions = true,
   showStatusDropdown = true,
+  canEdit = true,         // NEW: Default to true for backward compatibility
+  canDelete = true,       // NEW: Default to true for backward compatibility
+  canChangeStatus = true, // NEW: Default to true for backward compatibility
 }: IssueCardProps) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(anchorEl);
@@ -162,7 +145,7 @@ export const IssueCard = ({
             {issue.key}
           </Typography>
           
-          {showActions && (onEdit || onDelete) && (
+          {showActions && ((canEdit && onEdit) || (canDelete && onDelete)) && (
             <IconButton
               size="small"
               onClick={handleMenuOpen}
@@ -200,7 +183,7 @@ export const IssueCard = ({
           <IssuePriorityBadge priority={issue.priority} />
           
           {/* Status Badge or Dropdown - Show on desktop, hide on mobile if dropdown enabled */}
-          {showStatusDropdown && onStatusChange ? (
+          {showStatusDropdown && canChangeStatus && onStatusChange ? (
             <FormControl 
               size="small" 
               onClick={(e) => e.stopPropagation()}
@@ -280,7 +263,7 @@ export const IssueCard = ({
         onClose={handleMenuClose}
         onClick={(e) => e.stopPropagation()}
       >
-        {onEdit && (
+        {canEdit && onEdit && (
           <MenuItem onClick={handleEdit}>
             <ListItemIcon>
               <Edit fontSize="small" />
@@ -288,8 +271,8 @@ export const IssueCard = ({
             <ListItemText>Edit Issue</ListItemText>
           </MenuItem>
         )}
-        
-        {onDelete && (
+
+        {canDelete && onDelete && (
           <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
             <ListItemIcon>
               <Delete fontSize="small" color="error" />

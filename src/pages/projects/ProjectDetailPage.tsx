@@ -80,6 +80,16 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
 
+import {
+  canEditIssueSummary,
+  canEditIssueResponse,
+  canDeleteIssue,
+  canChangeStatusSummary,
+  canChangeStatusResponse,
+} from '@/utils/issuePermissions';
+
+import { useAuth } from '@/hooks/useAuth';
+
 type TabValue = 'overview' | 'members' | 'issues' | 'settings';
 
 /**
@@ -98,6 +108,8 @@ const ProjectDetailPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  // Get current user for permissions
+  const { user } = useAuth();
 
   // Tab state
   const [currentTab, setCurrentTab] = useState<TabValue>('overview');
@@ -360,22 +372,22 @@ const ProjectDetailPage = () => {
   };
 
   const handleIssueStatusChangeFromCard = (issue: IssueSummary, newStatus: IssueStatus) => {
-  console.log('[ProjectDetailPage] Status change from card:', issue.key, newStatus);
-  
-  // Call API directly with proper error handling
-  updateIssueStatus(projectId ?? "", issue.id, { newStatus })
-    .then(() => {
-      // Invalidate queries to refresh data
-      queryClient.invalidateQueries({ 
-        queryKey: ['issues', 'project', projectId] 
+    console.log('[ProjectDetailPage] Status change from card:', issue.key, newStatus);
+
+    // Call API directly with proper error handling
+    updateIssueStatus(projectId ?? "", issue.id, { newStatus })
+      .then(() => {
+        // Invalidate queries to refresh data
+        queryClient.invalidateQueries({
+          queryKey: ['issues', 'project', projectId]
+        });
+        toast.success(`Status updated to ${newStatus}`);
+      })
+      .catch((error) => {
+        console.error('[ProjectDetailPage] Failed to update status:', error);
+        toast.error(error.message || 'Failed to update status');
       });
-      toast.success(`Status updated to ${newStatus}`);
-    })
-    .catch((error) => {
-      console.error('[ProjectDetailPage] Failed to update status:', error);
-      toast.error(error.message || 'Failed to update status');
-    });
-};
+  };
 
   const handleIssuePageChange = (_: React.ChangeEvent<unknown>, newPage: number) => {
     console.log('[ProjectDetailPage] Issue page changed to:', newPage);
@@ -407,6 +419,23 @@ const ProjectDetailPage = () => {
   const canManageMembers = isOwner || isAdmin;
   const canDelete = isOwner;
   const canArchive = isOwner;
+
+
+  // Permission calculator functions for issues
+  const canUserEditIssueSummary = (issue: IssueSummary) =>
+    canEditIssueSummary(issue, currentUserRole, user?.id ?? '');
+
+  const canUserEditIssueResponse = (issue: IssueResponse) =>
+    canEditIssueResponse(issue, currentUserRole, user?.id ?? '');
+
+  const canUserDeleteIssue = () =>
+    canDeleteIssue(currentUserRole);
+
+  const canUserChangeStatusSummary = (issue: IssueSummary) =>
+    canChangeStatusSummary(issue, currentUserRole, user?.id ?? '');
+
+  const canUserChangeStatusResponse = (issue: IssueResponse) =>
+    canChangeStatusResponse(issue, currentUserRole, user?.id ?? '');
 
   // Empty state messages for issues
   const getIssuesEmptyMessage = () => {
@@ -650,7 +679,9 @@ const ProjectDetailPage = () => {
             onStatusChange={handleIssueStatusChangeFromCard}
             showActions={true}
             showStatusDropdown={true}
-            
+            canEditIssue={canUserEditIssueSummary}        // NEW
+            canDeleteIssue={canUserDeleteIssue}          // NEW (returns function that ignores issue param)
+            canChangeStatus={canUserChangeStatusSummary} // NEW
           />
 
           {/* Pagination */}
@@ -817,6 +848,10 @@ const ProjectDetailPage = () => {
         onDelete={handleDeleteIssueFromDetail}
         onStatusChange={handleIssueStatusChangeFromDetail}
         isLoading={isLoadingIssue}
+        canEdit={selectedIssue ? canUserEditIssueResponse(selectedIssue) : false}           // NEW
+        canDelete={selectedIssue ? canUserDeleteIssue() : false}                            // NEW
+        canChangeStatus={selectedIssue ? canUserChangeStatusResponse(selectedIssue) : false} // NEW
+
       />
     </Container>
   );

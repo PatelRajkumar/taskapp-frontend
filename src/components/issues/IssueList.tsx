@@ -53,6 +53,11 @@ export interface IssueListProps {
    * @default 6
    */
   skeletonCount?: number;
+
+  // NEW: Permission calculator functions (optional)
+  canEditIssue?: (issue: IssueSummary) => boolean;
+  canDeleteIssue?: (issue: IssueSummary) => boolean;
+  canChangeStatus?: (issue: IssueSummary) => boolean;
 }
 
 /**
@@ -90,6 +95,9 @@ export const IssueList = ({
   showActions = true,
   showStatusDropdown = true,
   skeletonCount = 6,
+  canEditIssue,      // NEW
+  canDeleteIssue,    // NEW
+  canChangeStatus,  // NEW
 }: IssueListProps) => {
   console.log('[IssueList] Rendering with:', {
     issueCount: issues.length,
@@ -147,6 +155,9 @@ export const IssueList = ({
             onStatusChange={onStatusChange}
             showActions={showActions}
             showStatusDropdown={showStatusDropdown}
+            canEdit={canEditIssue?.(issue)}      // NEW: Pass calculated permission
+            canDelete={canDeleteIssue?.(issue)}  // NEW: Pass calculated permission
+            canChangeStatus={canChangeStatus?.(issue)} // NEW: Pass calculated permission
           />
         </Grid>
       ))}

@@ -64,6 +64,10 @@ export interface IssueDetailDialogProps {
    * Whether currently loading
    */
   isLoading?: boolean;
+
+  canEdit?: boolean;
+  canDelete?: boolean;
+  canChangeStatus?: boolean;
 }
 
 /**
@@ -95,6 +99,9 @@ export const IssueDetailDialog = ({
   onDelete,
   onStatusChange,
   isLoading = false,
+  canEdit = true,         // NEW: Default to true for backward compatibility
+  canDelete = true,       // NEW: Default to true for backward compatibility
+  canChangeStatus = true, // NEW: Default to true for backward compatibility
 }: IssueDetailDialogProps) => {
   console.log('[IssueDetailDialog] Dialog open:', open, 'Issue:', issue?.key);
 
@@ -169,9 +176,9 @@ export const IssueDetailDialog = ({
             <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap' }}>
               <IssueTypeBadge type={issue.type} size="medium" />
               <IssuePriorityBadge priority={issue.priority} size="medium" />
-              
+
               {/* Status with Dropdown if onStatusChange provided */}
-              {onStatusChange ? (
+              {canChangeStatus && onStatusChange ? (
                 <FormControl size="small">
                   <Select
                     value={issue.status}
@@ -252,7 +259,7 @@ export const IssueDetailDialog = ({
                   </Typography>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <CalendarToday fontSize="small" color="action" />
-                    <Typography 
+                    <Typography
                       variant="body2"
                       color={isOverdue ? 'error' : isDueToday ? 'warning.main' : 'text.primary'}
                       fontWeight={isOverdue || isDueToday ? 600 : 400}
@@ -307,7 +314,7 @@ export const IssueDetailDialog = ({
           Close
         </Button>
         <Box sx={{ flex: 1 }} />
-        {issue && onEdit && (
+        {issue && canEdit && onEdit && (
           <Button
             variant="outlined"
             startIcon={<Edit />}
@@ -316,7 +323,7 @@ export const IssueDetailDialog = ({
             Edit
           </Button>
         )}
-        {issue && onDelete && (
+        {issue && canDelete && onDelete && (
           <Button
             variant="outlined"
             startIcon={<Delete />}
