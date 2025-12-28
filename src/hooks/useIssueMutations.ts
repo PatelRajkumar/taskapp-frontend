@@ -61,8 +61,11 @@ export const useCreateIssue = (
     mutationFn: (data) => createIssue(projectId, data),
     onSuccess: (data, variables) => {
       // Invalidate issue lists for this project
-      queryClient.invalidateQueries({ queryKey: issueKeys.list(projectId) });
-      
+      // queryClient.invalidateQueries({ queryKey: issueKeys.list(projectId) });
+      queryClient.invalidateQueries({
+        queryKey: ['issues', 'project', projectId]  // Invalidates all project issue queries
+      });
+
       // Invalidate project detail (issue count changes)
       queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
 
@@ -112,7 +115,7 @@ export const useUpdateIssue = (
   return useMutation({
     mutationFn: (data) => updateIssue(projectId, issueId, data),
     onSuccess: (data, variables) => {
-        
+
       // Invalidate specific issue
       queryClient.invalidateQueries({ queryKey: issueKeys.detail(issueId) });
       queryClient.invalidateQueries({ queryKey: issueKeys.detailByKey(data.key) });

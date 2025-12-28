@@ -3,14 +3,20 @@
  * Detailed view of a single project with tabs
  */
 
-import { Button, ErrorState, LoadingState, Input } from '@/components/common';
-import { AddMemberDialog, MemberList, ProjectForm, TransferOwnershipDialog, EditMemberRoleDialog } from '@/components/projects';
+import { Button, ErrorState, LoadingState } from '@/components/common';
 import {
-  IssueList,
-  IssueForm,
   IssueDetailDialog,
-  IssueFilters,
+  IssueForm,
+  IssueList
 } from '@/components/issues';
+import { AddMemberDialog, EditMemberRoleDialog, MemberList, ProjectForm, TransferOwnershipDialog } from '@/components/projects';
+import {
+  useCreateIssue,
+  useDeleteIssue,
+  useUpdateIssue,
+  useUpdateIssueStatus,
+} from '@/hooks/useIssueMutations';
+import { issueKeys, useIssueByKey, useProjectIssues } from '@/hooks/useIssues';
 import {
   useAddMember,
   useArchiveProject,
@@ -21,22 +27,17 @@ import {
   useUpdateMemberRole,
   useUpdateProject
 } from '@/hooks/useProjectMutations';
-import {
-  useCreateIssue,
-  useUpdateIssue,
-  useDeleteIssue,
-  useUpdateIssueStatus,
-} from '@/hooks/useIssueMutations';
 import { useProject, useProjectMembers } from '@/hooks/useProjects';
-import { useProjectIssues, useIssueByKey } from '@/hooks/useIssues';
+import { updateIssueStatus } from '@/interceptors';
+import type { IssueResponse, IssueSummary } from '@/interceptors/types/issue.types';
 import type { ProjectVisibility, UpdateProjectRequest } from '@/interceptors/types/project.types';
 import type { ProjectMemberAddRequest, ProjectMemberSummary, ProjectMemberUpdateRoleRequest, ProjectRole, TransferOwnershipRequest } from '@/interceptors/types/projectMember.types';
+import type { CreateIssueData, UpdateIssueData } from '@/schemas/issue.schema';
 import type { UpdateProjectData } from '@/schemas/project.schema';
 import type { AddProjectMemberData, TransferOwnershipData, UpdateProjectMemberRoleData } from '@/schemas/projectMember.schema';
-import type { CreateIssueData, UpdateIssueData } from '@/schemas/issue.schema';
-import type { IssueResponse, IssueSummary } from '@/interceptors/types/issue.types';
-import type { IssueStatus, IssueType, IssuePriority } from '@/utils/constants';
+import type { IssueStatus } from '@/utils/constants';
 import {
+  Add,
   Archive,
   Close,
   Delete,
@@ -50,7 +51,6 @@ import {
   Public,
   SwapHoriz,
   Unarchive,
-  Add,
 } from '@mui/icons-material';
 import {
   Box,
@@ -68,17 +68,16 @@ import {
   ListItemText,
   Menu,
   MenuItem,
+  Pagination,
   Paper,
   Tab,
   Tabs,
   Typography,
-  Pagination,
 } from '@mui/material';
+import { useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
 import { useState } from 'react';
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
-import { debounce } from 'lodash';
-import toast from 'react-hot-toast';
 
 type TabValue = 'overview' | 'members' | 'issues' | 'settings';
 
@@ -97,6 +96,7 @@ type TabValue = 'overview' | 'members' | 'issues' | 'settings';
 const ProjectDetailPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   // Tab state
   const [currentTab, setCurrentTab] = useState<TabValue>('overview');
@@ -113,11 +113,6 @@ const ProjectDetailPage = () => {
   const [selectedIssueKey, setSelectedIssueKey] = useState<string | null>(null);
   const [issuePage, setIssuePage] = useState(0);
   const issuePageSize = 12;
-
-  // NEW Issue filter states (single values)
-  const [selectedStatus, setSelectedStatus] = useState<IssueStatus | undefined>(undefined);
-  const [selectedType, setSelectedType] = useState<IssueType | undefined>(undefined);
-  const [selectedPriority, setSelectedPriority] = useState<IssuePriority | undefined>(undefined);
 
   // Menu state - EXISTING (keep as is)
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -136,10 +131,7 @@ const ProjectDetailPage = () => {
       searchTerm: '', // REQUIRED by IssueSearchParams
       page: issuePage,
       size: issuePageSize,
-      sort: 'updatedAt,desc',
-      status: selectedStatus,
-      type: selectedType,
-      priority: selectedPriority,
+      sort: 'updatedAt,desc'
     },
     !!projectId && currentTab === 'issues'
   );
@@ -369,27 +361,11 @@ const ProjectDetailPage = () => {
   const handleIssueStatusChangeFromCard = (issue: IssueSummary, newStatus: IssueStatus) => {
     console.log('[ProjectDetailPage] Status change from card:', issue.key, newStatus);
     // Need to use the issue ID for status update
-    updateIssueStatusMutation({ newStatus });
-  };
-
-  const handleIssueFiltersChange = (filters: {
-    status?: IssueStatus;
-    type?: IssueType;
-    priority?: IssuePriority;
-  }) => {
-    console.log('[ProjectDetailPage] Issue filters changed:', filters);
-    setSelectedStatus(filters.status);
-    setSelectedType(filters.type);
-    setSelectedPriority(filters.priority);
-    setIssuePage(0);
-  };
-
-  const handleClearIssueFilters = () => {
-    console.log('[ProjectDetailPage] Clearing issue filters');
-    setSelectedStatus(undefined);
-    setSelectedType(undefined);
-    setSelectedPriority(undefined);
-    setIssuePage(0);
+    // updateIssueStatusMutation({ newStatus });
+    updateIssueStatus(projectId ?? "", issue.id, { newStatus }).then(() => {
+      queryClient.invalidateQueries({ queryKey: issueKeys.list(projectId ?? "") });
+      // toast.success('Status updated!');
+    });
   };
 
   const handleIssuePageChange = (_: React.ChangeEvent<unknown>, newPage: number) => {
@@ -425,18 +401,10 @@ const ProjectDetailPage = () => {
 
   // Empty state messages for issues
   const getIssuesEmptyMessage = () => {
-    const hasFilters = selectedStatus || selectedType || selectedPriority;
-    if (hasFilters) {
-      return 'No issues match the selected filters';
-    }
     return 'No issues yet';
   };
 
   const getIssuesEmptyDescription = () => {
-    const hasFilters = selectedStatus || selectedType || selectedPriority;
-    if (hasFilters) {
-      return 'Try removing some filters';
-    }
     return 'Create your first issue to get started';
   };
 
@@ -659,17 +627,6 @@ const ProjectDetailPage = () => {
               Create Issue
             </Button>
           </Box>
-
-          {/* Filters */}
-          <Paper sx={{ p: 2, mb: 3 }}>
-            <IssueFilters
-              selectedStatus={selectedStatus}
-              selectedType={selectedType}
-              selectedPriority={selectedPriority}
-              onFiltersChange={handleIssueFiltersChange}
-              onClearFilters={handleClearIssueFilters}
-            />
-          </Paper>
 
           {/* Issue List - CORRECTED: Use IssueSummary handlers */}
           <IssueList

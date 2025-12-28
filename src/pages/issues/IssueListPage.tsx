@@ -190,7 +190,7 @@ const IssueListPage = () => {
       {/* Search & Filters */}
       <Paper sx={{ p: 2, mb: 3 }}>
         {/* Search Bar */}
-        <Box sx={{ mb: 2 }}>
+        {/* <Box sx={{ mb: 2 }}>
           <Input
             placeholder="Search issues by title or description..."
             value={searchTerm}
@@ -200,7 +200,7 @@ const IssueListPage = () => {
             }}
             fullWidth
           />
-        </Box>
+        </Box> */}
 
         {/* Filters */}
         <IssueFilters
