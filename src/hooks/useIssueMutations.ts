@@ -62,7 +62,7 @@ export const useCreateIssue = (
     onSuccess: (data, variables) => {
       // Invalidate issue lists for this project
       queryClient.invalidateQueries({ queryKey: issueKeys.list(projectId) });
-
+      
       // Invalidate project detail (issue count changes)
       queryClient.invalidateQueries({ queryKey: projectKeys.detail(projectId) });
 
@@ -75,7 +75,7 @@ export const useCreateIssue = (
       queryClient.invalidateQueries({ queryKey: issueKeys.myReported() });
 
       toast.success(`Issue "${data.key}" created successfully!`);
-      navigate(`/projects/${projectId}/issues/${data.key}`);
+      // navigate(`/projects/${projectId}/issues/${data.key}`);
 
       options?.onSuccess?.(data, variables);
     },
