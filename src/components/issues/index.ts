@@ -29,3 +29,6 @@ export type { RichTextEditorProps } from './RichTextEditor';
 
 export { RichTextDisplay } from './RichTextDisplay';
 export type { RichTextDisplayProps } from './RichTextDisplay';
+
+export { IssueFilters } from './IssueFilters';
+export type { IssueFiltersProps } from './IssueFilters';

@@ -9,32 +9,28 @@ import {
   Container,
   Typography,
   Box,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  IconButton,
   Pagination,
   Paper,
 } from '@mui/material';
-import { Close, Assignment, FilterList } from '@mui/icons-material';
+import { Assignment } from '@mui/icons-material';
 import { debounce } from 'lodash';
-import toast from 'react-hot-toast';
-import { Button, Input } from '@/components/common';
+import { Input } from '@/components/common';
 import {
   IssueList,
   IssueDetailDialog,
+  IssueFilters,
 } from '@/components/issues';
 import { useFilteredIssues, useIssueByKey } from '@/hooks/useIssues';
 import { useAuth } from '@/hooks/useAuth';
 import type { IssueResponse, IssueFilterParams, IssueSummary } from '@/interceptors/types/issue.types';
-import type { IssueStatus } from '@/utils/constants';
+import type { IssueStatus, IssueType, IssuePriority } from '@/utils/constants';
 
 /**
  * IssueListPage - Global issue search page
  * 
  * Features:
  * - Search issues across all projects
- * - Filter by project, status, type, priority
+ * - Filter by status, type, priority (single-select)
  * - Issue detail dialog
  * - Pagination
  * 
@@ -52,12 +48,10 @@ const IssueListPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
-  // Filter state
-  const [filters, setFilters] = useState<IssueFilterParams>({
-    page,
-    size: pageSize,
-    sort: 'updatedAt,desc',
-  });
+  // Filter state (single values matching backend)
+  const [selectedStatus, setSelectedStatus] = useState<IssueStatus | undefined>(undefined);
+  const [selectedType, setSelectedType] = useState<IssueType | undefined>(undefined);
+  const [selectedPriority, setSelectedPriority] = useState<IssuePriority | undefined>(undefined);
 
   // Dialog state
   const [selectedIssueKey, setSelectedIssueKey] = useState<string | null>(null);
@@ -68,12 +62,33 @@ const IssueListPage = () => {
   const handleSearchChange = debounce((value: string) => {
     console.log('[IssueListPage] Search term changed:', value);
     setDebouncedSearch(value);
-    setFilters(prev => ({ ...prev, search: value, page: 0 }));
-    setPage(0);
+    setPage(0); // Reset to first page on search
   }, 300);
 
-  // Queries
-  const { data, isLoading, error } = useFilteredIssues(filters);
+  // Build filter params
+  const buildFilterParams = (): IssueFilterParams => {
+    const params: IssueFilterParams = {
+      page,
+      size: pageSize,
+      sort: 'updatedAt,desc',
+    };
+
+    // Add filters (backend accepts single values)
+    if (selectedStatus) {
+      params.status = selectedStatus;
+    }
+    if (selectedType) {
+      params.type = selectedType;
+    }
+    if (selectedPriority) {
+      params.priority = selectedPriority;
+    }
+
+    return params;
+  };
+
+  // Query
+  const { data, isLoading, error } = useFilteredIssues(buildFilterParams());
   const issues = data?.content || [];
   const totalPages = data?.totalPages || 0;
 
@@ -97,27 +112,43 @@ const IssueListPage = () => {
     console.log('[IssueListPage] Edit issue:', issue.key);
     // Navigate to project to edit
     navigate(`/projects/${issue.project.id}`);
-    toast.success('Navigate to project to edit issue');
   };
 
   const handleDelete = (issue: IssueResponse) => {
     console.log('[IssueListPage] Delete issue:', issue.key);
     // Navigate to project to delete
     navigate(`/projects/${issue.project.id}`);
-    toast.success('Navigate to project to delete issue');
   };
 
   const handleStatusChange = (issue: IssueResponse, newStatus: IssueStatus) => {
     console.log('[IssueListPage] Status change:', issue.key, newStatus);
     // Navigate to project to change status
     navigate(`/projects/${issue.project.id}`);
-    toast.success('Navigate to project to change status');
+  };
+
+  const handleFiltersChange = (filters: {
+    status?: IssueStatus;
+    type?: IssueType;
+    priority?: IssuePriority;
+  }) => {
+    console.log('[IssueListPage] Filters changed:', filters);
+    setSelectedStatus(filters.status);
+    setSelectedType(filters.type);
+    setSelectedPriority(filters.priority);
+    setPage(0); // Reset to first page on filter change
+  };
+
+  const handleClearFilters = () => {
+    console.log('[IssueListPage] Clearing filters');
+    setSelectedStatus(undefined);
+    setSelectedType(undefined);
+    setSelectedPriority(undefined);
+    setPage(0);
   };
 
   const handlePageChange = (_: React.ChangeEvent<unknown>, newPage: number) => {
     console.log('[IssueListPage] Page changed to:', newPage);
     setPage(newPage - 1);
-    setFilters(prev => ({ ...prev, page: newPage - 1 }));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -126,12 +157,20 @@ const IssueListPage = () => {
     if (debouncedSearch) {
       return `No issues found matching "${debouncedSearch}"`;
     }
+    const hasFilters = selectedStatus || selectedType || selectedPriority;
+    if (hasFilters) {
+      return 'No issues match the selected filters';
+    }
     return 'No issues found';
   };
 
   const getEmptyDescription = () => {
     if (debouncedSearch) {
       return 'Try adjusting your search terms';
+    }
+    const hasFilters = selectedStatus || selectedType || selectedPriority;
+    if (hasFilters) {
+      return 'Try removing some filters';
     }
     return 'Issues from all accessible projects will appear here';
   };
@@ -150,29 +189,27 @@ const IssueListPage = () => {
 
       {/* Search & Filters */}
       <Paper sx={{ p: 2, mb: 3 }}>
-        <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
-          {/* Search Bar */}
-          <Box sx={{ flex: 1 }}>
-            <Input
-              placeholder="Search issues by title or description..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                handleSearchChange(e.target.value);
-              }}
-              fullWidth
-            />
-          </Box>
-
-          {/* Filter Button */}
-          <Button
-            variant="outlined"
-            startIcon={<FilterList />}
-            onClick={() => toast.error('Advanced filters not yet implemented')}
-          >
-            Filters
-          </Button>
+        {/* Search Bar */}
+        <Box sx={{ mb: 2 }}>
+          <Input
+            placeholder="Search issues by title or description..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              handleSearchChange(e.target.value);
+            }}
+            fullWidth
+          />
         </Box>
+
+        {/* Filters */}
+        <IssueFilters
+          selectedStatus={selectedStatus}
+          selectedType={selectedType}
+          selectedPriority={selectedPriority}
+          onFiltersChange={handleFiltersChange}
+          onClearFilters={handleClearFilters}
+        />
       </Paper>
 
       {/* Issue List */}
