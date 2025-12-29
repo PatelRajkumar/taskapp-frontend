@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const PROJECT_ROLES = ['ADMIN', 'MEMBER', 'VIEWER'] as const;
 

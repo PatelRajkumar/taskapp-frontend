@@ -4,7 +4,19 @@
  */
 
 import { Button, ErrorState, LoadingState } from '@/components/common';
-import { AddMemberDialog, MemberList, ProjectForm, TransferOwnershipDialog } from '@/components/projects';
+import {
+  IssueDetailDialog,
+  IssueForm,
+  IssueList
+} from '@/components/issues';
+import { AddMemberDialog, EditMemberRoleDialog, MemberList, ProjectForm, TransferOwnershipDialog } from '@/components/projects';
+import {
+  useCreateIssue,
+  useDeleteIssue,
+  useUpdateIssue,
+  useUpdateIssueStatus,
+} from '@/hooks/useIssueMutations';
+import { issueKeys, useIssueByKey, useProjectIssues } from '@/hooks/useIssues';
 import {
   useAddMember,
   useArchiveProject,
@@ -16,11 +28,16 @@ import {
   useUpdateProject
 } from '@/hooks/useProjectMutations';
 import { useProject, useProjectMembers } from '@/hooks/useProjects';
+import { updateIssueStatus } from '@/interceptors';
+import type { IssueResponse, IssueSummary } from '@/interceptors/types/issue.types';
 import type { ProjectVisibility, UpdateProjectRequest } from '@/interceptors/types/project.types';
 import type { ProjectMemberAddRequest, ProjectMemberSummary, ProjectMemberUpdateRoleRequest, ProjectRole, TransferOwnershipRequest } from '@/interceptors/types/projectMember.types';
+import type { CreateIssueData, UpdateIssueData } from '@/schemas/issue.schema';
 import type { UpdateProjectData } from '@/schemas/project.schema';
 import type { AddProjectMemberData, TransferOwnershipData, UpdateProjectMemberRoleData } from '@/schemas/projectMember.schema';
+import type { IssueStatus } from '@/utils/constants';
 import {
+  Add,
   Archive,
   Close,
   Delete,
@@ -51,80 +68,116 @@ import {
   ListItemText,
   Menu,
   MenuItem,
+  Pagination,
   Paper,
   Tab,
   Tabs,
   Typography,
 } from '@mui/material';
+import { useQueryClient } from '@tanstack/react-query';
 import { formatDistanceToNow } from 'date-fns';
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 import { Link as RouterLink, useNavigate, useParams } from 'react-router-dom';
-import { EditMemberRoleDialog } from '@/components/projects';
 
-type TabValue = 'overview' | 'members' | 'settings';
+import {
+  canEditIssueSummary,
+  canEditIssueResponse,
+  canDeleteIssue,
+  canChangeStatusSummary,
+  canChangeStatusResponse,
+} from '@/utils/issuePermissions';
+
+import { useAuth } from '@/hooks/useAuth';
+
+type TabValue = 'overview' | 'members' | 'issues' | 'settings';
 
 /**
  * ProjectDetailPage - Detailed project view with tabs
  * 
  * Features:
  * - Project header with actions
- * - Tabs: Overview, Members, Settings
+ * - Tabs: Overview, Members, Issues, Settings
  * - Permission-based UI
  * - Breadcrumbs navigation
+ * - Full CRUD operations for issues in Issues tab
  * 
  * URL: /projects/:projectId
  */
 const ProjectDetailPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const navigate = useNavigate();
-
+  const queryClient = useQueryClient();
+  // Get current user for permissions
+  const { user } = useAuth();
 
   // Tab state
   const [currentTab, setCurrentTab] = useState<TabValue>('overview');
 
-  // Dialog states
+  // Dialog states - EXISTING (keep as is)
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [addMemberDialogOpen, setAddMemberDialogOpen] = useState(false);
   const [transferOwnershipDialogOpen, setTransferOwnershipDialogOpen] = useState(false);
   const [editingMember, setEditingMember] = useState<ProjectMemberSummary | null>(null);
 
+  // NEW Issues tab states
+  const [createIssueDialogOpen, setCreateIssueDialogOpen] = useState(false);
+  const [editingIssue, setEditingIssue] = useState<IssueResponse | null>(null);
+  const [selectedIssueKey, setSelectedIssueKey] = useState<string | null>(null);
+  const [issuePage, setIssuePage] = useState(0);
+  const issuePageSize = 12;
 
-  // Menu state
+  // Menu state - EXISTING (keep as is)
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const menuOpen = Boolean(anchorEl);
 
   console.log('[ProjectDetailPage] Project ID:', projectId);
 
-  // Queries
+  // EXISTING Queries (keep as is)
   const { data: project, isLoading: projectLoading, error: projectError } = useProject(projectId || '', !!projectId);
   const { data: members = [], isLoading: membersLoading, error: membersError } = useProjectMembers(projectId || '', !!projectId);
 
-  // Mutations
+  // NEW Issues queries - CORRECTED: useProjectIssues takes IssueSearchParams which needs searchTerm
+  const { data: issuesData, isLoading: issuesLoading, error: issuesError } = useProjectIssues(
+    projectId || '',
+    {
+      searchTerm: '', // REQUIRED by IssueSearchParams
+      page: issuePage,
+      size: issuePageSize,
+      sort: 'updatedAt,desc'
+    },
+    !!projectId && currentTab === 'issues'
+  );
+  const issues = issuesData?.content || [];
+  const issuesTotalPages = issuesData?.totalPages || 0;
+
+  // Load selected issue details
+  const { data: selectedIssue, isLoading: isLoadingIssue } = useIssueByKey(
+    selectedIssueKey || '',
+    !!selectedIssueKey
+  );
+
+  // EXISTING Mutations (keep as is)
   const { mutate: updateProject, isPending: isUpdating } = useUpdateProject(projectId || '', {
     onSuccess: () => {
       setEditDialogOpen(false);
-      // toast.success('Project updated successfully!');
     },
   });
 
   const { mutate: deleteProject } = useDeleteProject({
     onSuccess: () => {
-      // toast.success('Project deleted successfully');
       navigate('/projects');
     },
   });
 
   const { mutate: archiveProject } = useArchiveProject();
-
   const { mutate: restoreProject } = useRestoreProject();
 
   const { mutate: addMember, isPending: isAddingMember } = useAddMember(projectId || '', {
     onSuccess: () => {
       setAddMemberDialogOpen(false);
-      // toast.success('Member added successfully!');
     },
   });
-
 
   const { mutate: updateMemberRole, isPending: isUpdatingRole } = useUpdateMemberRole(
     projectId || '',
@@ -141,11 +194,46 @@ const ProjectDetailPage = () => {
   const { mutate: transferOwnership, isPending: isTransferring } = useTransferOwnership(projectId || '', {
     onSuccess: () => {
       setTransferOwnershipDialogOpen(false);
-      // toast.success('Ownership transferred successfully!');
     },
   });
 
-  // Handlers
+  // NEW Issue mutations
+  const { mutate: createIssueMutation, isPending: isCreatingIssue } = useCreateIssue(projectId || '', {
+    onSuccess: () => {
+      setCreateIssueDialogOpen(false);
+      // toast.success('Issue created successfully!');
+    },
+  });
+
+  const { mutate: updateIssueMutation, isPending: isUpdatingIssue } = useUpdateIssue(
+    projectId || '',
+    editingIssue?.id || '',
+    {
+      onSuccess: () => {
+        setEditingIssue(null);
+        // toast.success('Issue updated successfully!');
+      },
+    }
+  );
+
+  const { mutate: deleteIssueMutation } = useDeleteIssue(projectId || '', {
+    onSuccess: () => {
+      setSelectedIssueKey(null);
+      // toast.success('Issue deleted successfully!');
+    },
+  });
+
+  const { mutate: updateIssueStatusMutation } = useUpdateIssueStatus(
+    projectId || '',
+    selectedIssue?.id || '',
+    {
+      onSuccess: () => {
+        // toast.success('Status updated successfully!');
+      },
+    }
+  );
+
+  // EXISTING Handlers (keep as is)
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
   };
@@ -184,7 +272,8 @@ const ProjectDetailPage = () => {
     handleMenuClose();
     if (!project) return;
 
-    if (confirm(`Are you sure you want to delete "${project.name}"? This action cannot be undone.`)) {
+    if (confirm(`Are you sure you want to delete "${project.name}"?\n\nThis action cannot be undone.`)) {
+      console.log('[ProjectDetailPage] Deleting project');
       deleteProject(project.id);
     }
   };
@@ -197,18 +286,6 @@ const ProjectDetailPage = () => {
     addMember(requestData);
   };
 
-  const handleRemoveMember = (member: ProjectMemberSummary) => {
-    if (confirm(`Remove ${member.user.name} from this project?`)) {
-      removeMember(member.user.id);
-    }
-  };
-
-  // Add handler:
-  const handleEditRole = (member: ProjectMemberSummary) => {
-    console.log('[ProjectDetailPage] Edit role for:', member.user.name);
-    setEditingMember(member);
-  };
-
   const handleUpdateMemberRole = (data: UpdateProjectMemberRoleData) => {
     if (!editingMember) return;
     const requestData: ProjectMemberUpdateRoleRequest = {
@@ -217,10 +294,22 @@ const ProjectDetailPage = () => {
     updateMemberRole(requestData);
   };
 
+  const handleEditRole = (member: ProjectMemberSummary) => {
+    console.log('[ProjectDetailPage] Edit member role:', member.user.name);
+    setEditingMember(member);
+  };
+
+  const handleRemoveMember = (member: ProjectMemberSummary) => {
+    if (confirm(`Are you sure you want to remove ${member.user.name} from this project?`)) {
+      console.log('[ProjectDetailPage] Removing member:', member.user.name);
+      removeMember(member.user.id);
+    }
+  };
+
   const handleTransferOwnership = () => {
-    setTransferOwnershipDialogOpen(true);
     handleMenuClose();
-  }
+    setTransferOwnershipDialogOpen(true);
+  };
 
   const handleTransferOwnershipSubmit = (data: TransferOwnershipData) => {
     const requestData: TransferOwnershipRequest = {
@@ -229,30 +318,101 @@ const ProjectDetailPage = () => {
     transferOwnership(requestData);
   };
 
+  // NEW Issue handlers - CORRECTED: Use IssueSummary type, not IssueResponse
+  const handleCreateIssue = (data: CreateIssueData) => {
+    console.log('[ProjectDetailPage] Creating issue:', data);
+    createIssueMutation(data);
+  };
+
+  const handleUpdateIssue = (data: UpdateIssueData) => {
+    console.log('[ProjectDetailPage] Updating issue:', data);
+    updateIssueMutation(data);
+  };
+
+  const handleIssueCardClick = (issue: IssueSummary) => {
+    console.log('[ProjectDetailPage] Issue clicked:', issue.key);
+    setSelectedIssueKey(issue.key);
+  };
+
+  const handleCloseIssueDetail = () => {
+    setSelectedIssueKey(null);
+  };
+
+  // CORRECTED: Accept IssueResponse from detail dialog, convert handlers
+  const handleEditIssueFromDetail = (issue: IssueResponse) => {
+    console.log('[ProjectDetailPage] Edit issue from detail:', issue.key);
+    setEditingIssue(issue);
+    setSelectedIssueKey(null);
+  };
+
+  const handleDeleteIssueFromDetail = (issue: IssueResponse) => {
+    if (confirm(`Are you sure you want to delete issue "${issue.key}"?\n\nThis action cannot be undone.`)) {
+      console.log('[ProjectDetailPage] Deleting issue from detail:', issue.key);
+      deleteIssueMutation(issue.id);
+    }
+  };
+
+  const handleIssueStatusChangeFromDetail = (issue: IssueResponse, newStatus: IssueStatus) => {
+    console.log('[ProjectDetailPage] Status change from detail:', issue.key, newStatus);
+    updateIssueStatusMutation({ newStatus });
+  };
+
+  // CORRECTED: Accept IssueSummary from issue card
+  const handleEditIssueFromCard = (issue: IssueSummary) => {
+    console.log('[ProjectDetailPage] Edit issue from card:', issue.key);
+    // Need to fetch full issue to edit - use the key to open detail first
+    setSelectedIssueKey(issue.key);
+  };
+
+  const handleDeleteIssueFromCard = (issue: IssueSummary) => {
+    if (confirm(`Are you sure you want to delete issue "${issue.key}"?\n\nThis action cannot be undone.`)) {
+      console.log('[ProjectDetailPage] Deleting issue from card:', issue.key);
+      deleteIssueMutation(issue.id);
+    }
+  };
+
+  const handleIssueStatusChangeFromCard = (issue: IssueSummary, newStatus: IssueStatus) => {
+    console.log('[ProjectDetailPage] Status change from card:', issue.key, newStatus);
+
+    // Call API directly with proper error handling
+    updateIssueStatus(projectId ?? "", issue.id, { newStatus })
+      .then(() => {
+        // Invalidate queries to refresh data
+        queryClient.invalidateQueries({
+          queryKey: ['issues', 'project', projectId]
+        });
+        toast.success(`Status updated to ${newStatus}`);
+      })
+      .catch((error) => {
+        console.error('[ProjectDetailPage] Failed to update status:', error);
+        toast.error(error.message || 'Failed to update status');
+      });
+  };
+
+  const handleIssuePageChange = (_: React.ChangeEvent<unknown>, newPage: number) => {
+    console.log('[ProjectDetailPage] Issue page changed to:', newPage);
+    setIssuePage(newPage - 1);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   // Loading state
   if (projectLoading) {
-    return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <LoadingState count={1} height={400} />
-      </Container>
-    );
+    return <LoadingState />;
   }
 
   // Error state
   if (projectError || !project) {
     return (
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <ErrorState
-          icon={<Folder />}
-          title="Failed to load project"
-          description={projectError?.message || 'Project not found'}
-        />
-      </Container>
+      <ErrorState
+        icon={<Folder />}
+        title="Project not found"
+        description={projectError?.message || 'The project you are looking for does not exist.'}
+      />
     );
   }
 
   // Permission checks
-  const currentUserRole = project.currentUserRole as ProjectRole | undefined;
+  const currentUserRole = project.currentUserRole as ProjectRole | undefined; // CORRECTED: Cast to ProjectRole
   const isOwner = currentUserRole === 'OWNER';
   const isAdmin = currentUserRole === 'ADMIN';
   const canEdit = isOwner || isAdmin;
@@ -260,9 +420,35 @@ const ProjectDetailPage = () => {
   const canDelete = isOwner;
   const canArchive = isOwner;
 
+
+  // Permission calculator functions for issues
+  const canUserEditIssueSummary = (issue: IssueSummary) =>
+    canEditIssueSummary(issue, currentUserRole, user?.id ?? '');
+
+  const canUserEditIssueResponse = (issue: IssueResponse) =>
+    canEditIssueResponse(issue, currentUserRole, user?.id ?? '');
+
+  const canUserDeleteIssue = () =>
+    canDeleteIssue(currentUserRole);
+
+  const canUserChangeStatusSummary = (issue: IssueSummary) =>
+    canChangeStatusSummary(issue, currentUserRole, user?.id ?? '');
+
+  const canUserChangeStatusResponse = (issue: IssueResponse) =>
+    canChangeStatusResponse(issue, currentUserRole, user?.id ?? '');
+
+  // Empty state messages for issues
+  const getIssuesEmptyMessage = () => {
+    return 'No issues yet';
+  };
+
+  const getIssuesEmptyDescription = () => {
+    return 'Create your first issue to get started';
+  };
+
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Breadcrumbs */}
+      {/* Breadcrumbs - EXISTING (keep as is) */}
       <Breadcrumbs separator={<NavigateNext fontSize="small" />} sx={{ mb: 3 }}>
         <Link component={RouterLink} to="/dashboard" underline="hover" color="inherit">
           Dashboard
@@ -273,7 +459,7 @@ const ProjectDetailPage = () => {
         <Typography color="text.primary">{project.name}</Typography>
       </Breadcrumbs>
 
-      {/* Project Header */}
+      {/* Project Header - EXISTING (keep as is) */}
       <Paper sx={{ p: 3, mb: 3 }}>
         <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
           <Box sx={{ flex: 1 }}>
@@ -321,7 +507,7 @@ const ProjectDetailPage = () => {
             </Box>
           </Box>
 
-          {/* Actions Menu */}
+          {/* Actions Menu - EXISTING (keep as is) */}
           {canEdit && (
             <Box>
               <IconButton onClick={handleMenuOpen}>
@@ -352,30 +538,31 @@ const ProjectDetailPage = () => {
                     <ListItemText>Delete Project</ListItemText>
                   </MenuItem>
                 )}
-                {
-                  isOwner && (<MenuItem onClick={handleTransferOwnership}>
+                {isOwner && (
+                  <MenuItem onClick={handleTransferOwnership}>
                     <ListItemIcon>
                       <SwapHoriz fontSize="small" />
                     </ListItemIcon>
                     <ListItemText>Transfer Ownership</ListItemText>
-                  </MenuItem>)
-                }
+                  </MenuItem>
+                )}
               </Menu>
             </Box>
           )}
         </Box>
       </Paper>
 
-      {/* Tabs */}
+      {/* Tabs - UPDATED: Added Issues tab */}
       <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
         <Tabs value={currentTab} onChange={(_, newValue) => setCurrentTab(newValue)}>
           <Tab label="Overview" value="overview" />
           <Tab label="Members" value="members" />
+          <Tab label="Issues" value="issues" />
           {canEdit && <Tab label="Settings" value="settings" />}
         </Tabs>
       </Box>
 
-      {/* Tab Content */}
+      {/* Tab Content - Overview - EXISTING (keep as is) */}
       {currentTab === 'overview' && (
         <Grid container spacing={3}>
           <Grid size={{ xs: 12, md: 6 }}>
@@ -440,6 +627,7 @@ const ProjectDetailPage = () => {
         </Grid>
       )}
 
+      {/* Tab Content - Members - EXISTING (keep as is) */}
       {currentTab === 'members' && (
         <Box>
           {canManageMembers && (
@@ -464,6 +652,56 @@ const ProjectDetailPage = () => {
         </Box>
       )}
 
+      {/* Tab Content - Issues - NEW */}
+      {currentTab === 'issues' && (
+        <Box>
+          {/* Create Issue Button */}
+          <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end' }}>
+            <Button
+              variant="primary"
+              startIcon={<Add />}
+              onClick={() => setCreateIssueDialogOpen(true)}
+            >
+              Create Issue
+            </Button>
+          </Box>
+
+          {/* Issue List - CORRECTED: Use IssueSummary handlers */}
+          <IssueList
+            issues={issues}
+            isLoading={issuesLoading}
+            error={issuesError?.message}
+            emptyMessage={getIssuesEmptyMessage()}
+            emptyDescription={getIssuesEmptyDescription()}
+            onClick={handleIssueCardClick}
+            onEdit={handleEditIssueFromCard}
+            onDelete={handleDeleteIssueFromCard}
+            onStatusChange={handleIssueStatusChangeFromCard}
+            showActions={true}
+            showStatusDropdown={true}
+            canEditIssue={canUserEditIssueSummary}        // NEW
+            canDeleteIssue={canUserDeleteIssue}          // NEW (returns function that ignores issue param)
+            canChangeStatus={canUserChangeStatusSummary} // NEW
+          />
+
+          {/* Pagination */}
+          {issuesTotalPages > 1 && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+              <Pagination
+                count={issuesTotalPages}
+                page={issuePage + 1}
+                onChange={handleIssuePageChange}
+                color="primary"
+                size="large"
+                showFirstButton
+                showLastButton
+              />
+            </Box>
+          )}
+        </Box>
+      )}
+
+      {/* Tab Content - Settings - EXISTING (keep as is) */}
       {currentTab === 'settings' && canEdit && (
         <Paper sx={{ p: 3 }}>
           <Typography variant="h6" gutterBottom>
@@ -503,7 +741,7 @@ const ProjectDetailPage = () => {
         </Paper>
       )}
 
-      {/* Edit Project Dialog */}
+      {/* Dialogs - EXISTING (keep as is) */}
       <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="sm" fullWidth>
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Typography variant="h6">Edit Project</Typography>
@@ -522,7 +760,6 @@ const ProjectDetailPage = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Add Member Dialog */}
       <AddMemberDialog
         open={addMemberDialogOpen}
         onClose={() => setAddMemberDialogOpen(false)}
@@ -531,7 +768,6 @@ const ProjectDetailPage = () => {
         existingMemberIds={members.map((m) => m.user.id)}
       />
 
-      {/* Transfer Ownership Dialog */}
       <TransferOwnershipDialog
         open={transferOwnershipDialogOpen}
         onClose={() => setTransferOwnershipDialogOpen(false)}
@@ -540,13 +776,82 @@ const ProjectDetailPage = () => {
         projectName={project.name}
         members={members}
       />
-      {/* Edit Member Role Dialog */}
+
       <EditMemberRoleDialog
         open={!!editingMember}
         onClose={() => setEditingMember(null)}
         onSubmit={handleUpdateMemberRole}
         isSubmitting={isUpdatingRole}
         member={editingMember}
+      />
+
+      {/* NEW Issue Dialogs */}
+      <Dialog
+        open={createIssueDialogOpen}
+        onClose={() => setCreateIssueDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="h6">Create New Issue</Typography>
+          <IconButton onClick={() => setCreateIssueDialogOpen(false)}>
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ pt: 2 }}>
+            <IssueForm
+              mode="create"
+              projectMembers={members}
+              onSubmit={handleCreateIssue}
+              onCancel={() => setCreateIssueDialogOpen(false)}
+              isSubmitting={isCreatingIssue}
+            />
+          </Box>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={!!editingIssue}
+        onClose={() => setEditingIssue(null)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Typography variant="h6">Edit Issue</Typography>
+          <IconButton onClick={() => setEditingIssue(null)}>
+            <Close />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent>
+          {editingIssue && (
+            <Box sx={{ pt: 2 }}>
+              <IssueForm
+                mode="edit"
+                issue={editingIssue}
+                projectMembers={members}
+                onSubmit={handleUpdateIssue}
+                onCancel={() => setEditingIssue(null)}
+                isSubmitting={isUpdatingIssue}
+              />
+            </Box>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Issue Detail Dialog - CORRECTED: Use IssueResponse handlers */}
+      <IssueDetailDialog
+        open={!!selectedIssueKey}
+        onClose={handleCloseIssueDetail}
+        issue={selectedIssue || null}
+        onEdit={handleEditIssueFromDetail}
+        onDelete={handleDeleteIssueFromDetail}
+        onStatusChange={handleIssueStatusChangeFromDetail}
+        isLoading={isLoadingIssue}
+        canEdit={selectedIssue ? canUserEditIssueResponse(selectedIssue) : false}           // NEW
+        canDelete={selectedIssue ? canUserDeleteIssue() : false}                            // NEW
+        canChangeStatus={selectedIssue ? canUserChangeStatusResponse(selectedIssue) : false} // NEW
+
       />
     </Container>
   );

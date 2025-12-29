@@ -97,3 +97,37 @@ export type {
     TransferOwnershipRequest,
     ProjectRole,
 } from './types/projectMember.types';
+
+// Export Issue API functions
+export {
+    createIssue,
+    updateIssue,
+    updateIssueStatus,
+    assignIssue,
+    deleteIssue,
+    getProjectIssues,
+    searchProjectIssues,
+    getUnassignedIssues,
+    getOverdueIssues,
+    getRecentlyUpdatedIssues,
+    filterIssues,
+    getMyAssignedIssues,
+    getMyReportedIssues,
+    getIssueById,
+    getIssueByKey,
+    getIssueHistory,
+} from './endpoints/issue.api';
+
+// Export Issue types
+export type {
+    IssueResponse,
+    IssueSummary,
+    IssueHistoryResponse,
+    CreateIssueRequest,
+    UpdateIssueRequest,
+    UpdateIssueStatusRequest,
+    AssignIssueRequest,
+    IssueFilterParams,
+    IssueSearchParams,
+    OverdueIssuesParams,
+} from './types/issue.types';
