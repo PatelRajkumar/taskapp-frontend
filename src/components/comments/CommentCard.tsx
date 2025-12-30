@@ -97,11 +97,21 @@ export const CommentCard = ({
     // Calculate if comment has been edited
     const isEdited = comment.updatedAt !== comment.createdAt;
 
-    // Permission check: Can edit/delete if author OR OWNER/ADMIN
-    const canModify =
-        comment.author.id === currentUserId ||
+    // Permission checks based on role
+    // OWNER/ADMIN can edit/delete all comments
+    // MEMBER can edit/delete only their own comments
+    // VIEWER cannot edit/delete any comments
+    const canEdit =
         userRole === 'OWNER' ||
-        userRole === 'ADMIN';
+        userRole === 'ADMIN' ||
+        (userRole === 'MEMBER' && comment.author.id === currentUserId);
+
+    const canDelete =
+        userRole === 'OWNER' ||
+        userRole === 'ADMIN' ||
+        (userRole === 'MEMBER' && comment.author.id === currentUserId);
+
+    const showActionsMenu = canEdit || canDelete;
 
     const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
         setAnchorEl(event.currentTarget);
@@ -163,7 +173,7 @@ export const CommentCard = ({
                         {/* Spacer */}
                         <Box sx={{ flex: 1 }} />
                         {/* Actions Menu */}
-                        {showActions && canModify && (onEdit || onDelete) && (
+                        {showActions && showActionsMenu && (onEdit || onDelete) && (
                             <IconButton
                                 size="small"
                                 onClick={handleMenuOpen}
@@ -193,7 +203,7 @@ export const CommentCard = ({
                 open={menuOpen}
                 onClose={handleMenuClose}
             >
-                {onEdit && (
+                {onEdit && canEdit && (
                     <MenuItem onClick={handleEdit}>
                         <ListItemIcon>
                             <Edit fontSize="small" />
@@ -202,7 +212,7 @@ export const CommentCard = ({
                     </MenuItem>
                 )}
 
-                {onDelete && (
+                {onDelete && canDelete && (
                     <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
                         <ListItemIcon>
                             <Delete fontSize="small" color="error" />

@@ -185,6 +185,12 @@ export const CommentSection = ({
         return null;
     }
 
+    // Permission check: OWNER/ADMIN/MEMBER can create comments, VIEWER cannot
+    const canCreateComment =
+        userRole === 'OWNER' ||
+        userRole === 'ADMIN' ||
+        userRole === 'MEMBER';
+
     return (
         <Box>
             {/* Header */}
@@ -197,8 +203,8 @@ export const CommentSection = ({
 
             <Divider sx={{ mb: 3 }} />
 
-            {/* Create Form (hidden when editing) */}
-            {!editingComment && (
+            {/* Create Form (hidden when editing or no permission) */}
+            {!editingComment && canCreateComment && (
                 <Box sx={{ mb: 3, p: 2, bgcolor: 'background.default', borderRadius: 1 }}>
                     <CommentForm
                         mode="create"
@@ -206,6 +212,15 @@ export const CommentSection = ({
                         onSubmit={handleCreateComment}
                         isSubmitting={isCreating}
                     />
+                </Box>
+            )}
+
+            {/* Read-only message for viewers */}
+            {!editingComment && !canCreateComment && (
+                <Box sx={{ mb: 3, p: 2, bgcolor: 'action.hover', borderRadius: 1, textAlign: 'center' }}>
+                    <Typography variant="body2" color="text.secondary">
+                        You have view-only access to comments
+                    </Typography>
                 </Box>
             )}
 

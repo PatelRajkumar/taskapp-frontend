@@ -4,6 +4,7 @@
  */
 
 import { Button, ErrorState, LoadingState } from '@/components/common';
+import { CommentSection } from '@/components/comments';
 import {
   IssueDetailDialog,
   IssueForm,
@@ -816,6 +817,7 @@ const ProjectDetailPage = () => {
         onClose={() => setEditingIssue(null)}
         maxWidth="md"
         fullWidth
+        scroll="paper"
       >
         <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <Typography variant="h6">Edit Issue</Typography>
@@ -834,6 +836,16 @@ const ProjectDetailPage = () => {
                 onCancel={() => setEditingIssue(null)}
                 isSubmitting={isUpdatingIssue}
               />
+
+              {/* Comments Section - Show in edit mode as well */}
+              <Divider sx={{ my: 4 }} />
+              {currentUserRole ? (
+                <CommentSection
+                  issueId={editingIssue.id}
+                  projectId={editingIssue.project.id}
+                  userRole={currentUserRole}
+                />
+              ) : null}
             </Box>
           )}
         </DialogContent>
@@ -851,7 +863,7 @@ const ProjectDetailPage = () => {
         canEdit={selectedIssue ? canUserEditIssueResponse(selectedIssue) : false}           // NEW
         canDelete={selectedIssue ? canUserDeleteIssue() : false}                            // NEW
         canChangeStatus={selectedIssue ? canUserChangeStatusResponse(selectedIssue) : false} // NEW
-
+        userRole={currentUserRole}
       />
     </Container>
   );
