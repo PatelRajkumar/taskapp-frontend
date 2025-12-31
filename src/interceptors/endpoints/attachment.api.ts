@@ -16,6 +16,7 @@ import type { PageResponse, PageableRequest } from '../types/project.types';
 import type {
     AttachmentResponse,
     AttachmentSummary,
+    UploadAttachmentRequest,
 } from '../types/attachment.types';
 
 /**

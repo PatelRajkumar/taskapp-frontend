@@ -131,3 +131,39 @@ export type {
     IssueSearchParams,
     OverdueIssuesParams,
 } from './types/issue.types';
+
+// Export Comment API functions
+export {
+    createComment,
+    updateComment,
+    deleteComment,
+    getCommentById,
+    getIssueComments,
+    countIssueComments,
+} from './endpoints/comment.api';
+
+// Export Comment types
+export type {
+    CommentResponse,
+    CommentSummary,
+    CreateCommentRequest,
+    UpdateCommentRequest,
+} from './types/comment.types';
+
+// Export Attachment API functions
+export {
+    uploadAttachment,
+    getIssueAttachments,
+    getAttachment,
+    generateDownloadUrl,
+    deleteAttachment,
+    getAttachmentCount,
+} from './endpoints/attachment.api';
+
+// Export Attachment types
+export type {
+    AttachmentResponse,
+    AttachmentSummary,
+    UploadAttachmentRequest,
+    StorageType,
+} from './types/attachment.types';
