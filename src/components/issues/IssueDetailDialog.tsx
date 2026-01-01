@@ -35,6 +35,7 @@ import { CommentSection } from '@/components/comments'; // NEW: Import CommentSe
 import type { IssueResponse } from '@/interceptors/types/issue.types';
 import type { IssueStatus } from '@/utils/constants';
 import type { ProjectRole } from '@/interceptors/types/projectMember.types'; // NEW: Import ProjectRole
+import { AttachmentSection } from '@/components/attachments';
 
 export interface IssueDetailDialogProps {
   /**
@@ -78,20 +79,20 @@ export interface IssueDetailDialogProps {
    */
   canChangeStatus?: boolean;
   /**
-   * Current user's role in project (for comment permissions)
-   * NEW: Required for comment permissions
-   */
+ * Current user's role in project (for comment and attachment permissions)
+ */
   userRole?: ProjectRole;
 }
 
 /**
- * IssueDetailDialog - Full issue details in a dialog with inline comments
+ * IssueDetailDialog - Full issue details in a dialog with inline attachments and comments
  * 
  * Features:
  * - Full issue information
  * - Rich text description display (HTML rendered)
  * - Status change dropdown
  * - Edit and delete actions
+ * - Inline attachments section (Jira-style) [NEW]
  * - Inline comments section (Jira-style)
  * - Responsive design
  * - Close on backdrop click or ESC
@@ -104,7 +105,12 @@ export interface IssueDetailDialogProps {
  * │ Description                     │
  * │ Details (Assignee, Reporter)    │
  * ├─────────────────────────────────┤
- * │ Comments Section (Inline)       │  ← NEW
+ * │ Attachments Section [NEW]      │
+ * │ - Upload zone                   │
+ * │ - Attachment list               │
+ * │ - Pagination                    │
+ * ├─────────────────────────────────┤
+ * │ Comments Section                │
  * │ - Create form                   │
  * │ - Comment list                  │
  * │ - Pagination                    │
@@ -337,7 +343,22 @@ export const IssueDetailDialog = ({
                 </Box>
               </Box>
             </Box>
+            <Divider sx={{ my: 4 }} />
 
+            {/* Only show attachments if userRole is provided */}
+            {userRole ? (
+              <AttachmentSection
+                issueId={issue.id}
+                projectId={issue.project.id}
+                userRole={userRole}
+              />
+            ) : (
+              <Box sx={{ py: 2, textAlign: 'center' }}>
+                <Typography variant="body2" color="text.secondary">
+                  Attachments are not available
+                </Typography>
+              </Box>
+            )}
             {/* ========== COMMENTS SECTION (NEW) ========== */}
             <Divider sx={{ my: 4 }} />
 
