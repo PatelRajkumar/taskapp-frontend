@@ -31,6 +31,7 @@ import {
   useRestoreProject,
 } from '@/hooks/useProjectMutations';
 import { useAuth } from '@/hooks/useAuth';
+import { Header } from '@/components/layout';
 import type { ProjectResponse, CreateProjectRequest, UpdateProjectRequest, ProjectVisibility } from '@/interceptors/types/project.types';
 import type { CreateProjectData, UpdateProjectData } from '@/schemas/project.schema';
 
@@ -257,126 +258,129 @@ const ProjectListPage = () => {
   const canCreateProject = hasPermission('PROJECT_CREATE');
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Folder color="primary" sx={{ fontSize: 40 }} />
-          <Typography variant="h3" component="h1">
-            Projects
-          </Typography>
-        </Box>
+    <>
+      <Header />
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        {/* Header */}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Folder color="primary" sx={{ fontSize: 40 }} />
+            <Typography variant="h3" component="h1">
+              Projects
+            </Typography>
+          </Box>
 
-        {canCreateProject && (
-          <Button
-            variant="primary"
-            startIcon={<Add />}
-            onClick={() => setCreateDialogOpen(true)}
-          >
-            Create Project
-          </Button>
-        )}
-      </Box>
-
-      {/* Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={currentTab} onChange={handleTabChange}>
-          <Tab label="My Projects" value="my" />
-          <Tab label="Archived" value="archived" />
-          <Tab label="Public Projects" value="public" />
-        </Tabs>
-      </Box>
-
-      {/* Search Bar */}
-      <Box sx={{ mb: 3 }}>
-        <Input
-          placeholder="Search projects by name or key..."
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            handleSearchChange(e.target.value);
-          }}
-          fullWidth
-        />
-      </Box>
-
-      {/* Project List */}
-      <ProjectList
-        projects={projects}
-        isLoading={currentQuery.isLoading}
-        error={currentQuery.error?.message}
-        emptyMessage={getEmptyMessage()}
-        emptyDescription={getEmptyDescription()}
-        onEdit={handleEdit}
-        onArchive={handleArchiveToggle}
-        onDelete={handleDelete}
-        showActions={currentTab !== 'public'}
-      />
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-          <Pagination
-            count={totalPages}
-            page={page + 1} // MUI Pagination is 1-indexed
-            onChange={handlePageChange}
-            color="primary"
-            size="large"
-            showFirstButton
-            showLastButton
-          />
-        </Box>
-      )}
-
-      {/* Create Project Dialog */}
-      <Dialog
-        open={createDialogOpen}
-        onClose={() => setCreateDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6">Create New Project</Typography>
-          <IconButton onClick={() => setCreateDialogOpen(false)}>
-            <Close />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          <ProjectForm
-            mode="create"
-            onSubmit={handleCreateProject}
-            onCancel={() => setCreateDialogOpen(false)}
-            isSubmitting={isCreating}
-          />
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Project Dialog */}
-      <Dialog
-        open={!!editingProject}
-        onClose={() => setEditingProject(null)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6">Edit Project</Typography>
-          <IconButton onClick={() => setEditingProject(null)}>
-            <Close />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          {editingProject && (
-            <ProjectForm
-              mode="edit"
-              project={editingProject}
-              onSubmit={handleUpdateProject}
-              onCancel={() => setEditingProject(null)}
-              isSubmitting={isUpdating}
-            />
+          {canCreateProject && (
+            <Button
+              variant="primary"
+              startIcon={<Add />}
+              onClick={() => setCreateDialogOpen(true)}
+            >
+              Create Project
+            </Button>
           )}
-        </DialogContent>
-      </Dialog>
-    </Container>
+        </Box>
+
+        {/* Tabs */}
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+          <Tabs value={currentTab} onChange={handleTabChange}>
+            <Tab label="My Projects" value="my" />
+            <Tab label="Archived" value="archived" />
+            <Tab label="Public Projects" value="public" />
+          </Tabs>
+        </Box>
+
+        {/* Search Bar */}
+        <Box sx={{ mb: 3 }}>
+          <Input
+            placeholder="Search projects by name or key..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              handleSearchChange(e.target.value);
+            }}
+            fullWidth
+          />
+        </Box>
+
+        {/* Project List */}
+        <ProjectList
+          projects={projects}
+          isLoading={currentQuery.isLoading}
+          error={currentQuery.error?.message}
+          emptyMessage={getEmptyMessage()}
+          emptyDescription={getEmptyDescription()}
+          onEdit={handleEdit}
+          onArchive={handleArchiveToggle}
+          onDelete={handleDelete}
+          showActions={currentTab !== 'public'}
+        />
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+            <Pagination
+              count={totalPages}
+              page={page + 1} // MUI Pagination is 1-indexed
+              onChange={handlePageChange}
+              color="primary"
+              size="large"
+              showFirstButton
+              showLastButton
+            />
+          </Box>
+        )}
+
+        {/* Create Project Dialog */}
+        <Dialog
+          open={createDialogOpen}
+          onClose={() => setCreateDialogOpen(false)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="h6">Create New Project</Typography>
+            <IconButton onClick={() => setCreateDialogOpen(false)}>
+              <Close />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent>
+            <ProjectForm
+              mode="create"
+              onSubmit={handleCreateProject}
+              onCancel={() => setCreateDialogOpen(false)}
+              isSubmitting={isCreating}
+            />
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Project Dialog */}
+        <Dialog
+          open={!!editingProject}
+          onClose={() => setEditingProject(null)}
+          maxWidth="sm"
+          fullWidth
+        >
+          <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="h6">Edit Project</Typography>
+            <IconButton onClick={() => setEditingProject(null)}>
+              <Close />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent>
+            {editingProject && (
+              <ProjectForm
+                mode="edit"
+                project={editingProject}
+                onSubmit={handleUpdateProject}
+                onCancel={() => setEditingProject(null)}
+                isSubmitting={isUpdating}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+      </Container>
+    </>
   );
 };
 

@@ -14,3 +14,9 @@ export type { ActivityTimelineItemProps } from './ActivityTimelineItem';
 
 export { UpcomingDueItem } from './UpcomingDueItem';
 export type { UpcomingDueItemProps } from './UpcomingDueItem';
+
+export { IssuesByStatusChart } from './IssuesByStatusChart';
+export type { IssuesByStatusChartProps } from './IssuesByStatusChart';
+
+export { ProjectCompletionChart } from './ProjectCompletionChart';
+export type { ProjectCompletionChartProps } from './ProjectCompletionChart';

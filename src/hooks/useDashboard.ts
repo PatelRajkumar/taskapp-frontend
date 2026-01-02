@@ -96,23 +96,30 @@ export const useDashboardData = (dateRangeFilter: DateRangeFilter) => {
     const allIssuesAcrossProjects = useMemo(() => {
         const issues: IssueResponse[] = [];
 
-        issuesQueries.forEach((query) => {
+        issuesQueries.forEach((query, index) => {
             if (query.data?.content) {
-                // Convert IssueSummary to IssueResponse format
-                // Note: We need full IssueResponse for reporter field in activity timeline
-                // But API returns IssueSummary in lists, so we'll need to fetch details for activities
-                // For now, we'll work with what we have (IssueSummary lacks reporter)
+                const project = projects[index]; // Get the corresponding project
+
+                // Convert IssueSummary to IssueResponse format by adding project field
                 query.data.content.forEach((issueSummary) => {
-                    // We'll need to enhance this to full IssueResponse for activities
-                    // For metrics, IssueSummary is sufficient
-                    issues.push(issueSummary as any); // Type assertion needed here
+                    // Enrich IssueSummary with project field for compatibility
+                    const enrichedIssue = {
+                        ...issueSummary,
+                        project: {
+                            id: project.id,
+                            name: project.name,
+                            key: project.key,
+                        },
+                    } as IssueResponse;
+
+                    issues.push(enrichedIssue);
                 });
             }
         });
 
         console.log('[useDashboardData] Total issues aggregated:', issues.length);
         return issues;
-    }, [issuesQueries]);
+    }, [issuesQueries, projects]);
 
     // Step 4: Filter issues assigned to current user
     const myAssignedIssues = useMemo(() => {

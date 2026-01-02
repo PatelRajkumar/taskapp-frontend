@@ -338,7 +338,7 @@ export function calculateProjectCompletions(
         .filter((p) => !p.isArchived)
         .map((project) => {
             const projectIssues = allIssues.filter(
-                (issue) => issue.project.id === project.id
+                (issue) => issue.project?.id === project.id
             );
 
             const totalIssues = projectIssues.length;
@@ -395,8 +395,13 @@ export function buildActivityTimeline(
     const activities: Activity[] = [];
 
     issues.forEach((issue) => {
-        // Activity: Issue Created (if user is reporter)
-        if (issue.reporter.id === currentUserId) {
+        // Skip if issue doesn't have project field
+        if (!issue.project?.id) {
+            return; // Skip this issue for activity timeline
+        }
+
+        // Activity: Issue Created (if user is reporter) - only if reporter exists
+        if ((issue as any).reporter?.id === currentUserId) {
             activities.push({
                 id: `${issue.id}-created`,
                 type: ActivityType.ISSUE_CREATED,
@@ -410,7 +415,9 @@ export function buildActivityTimeline(
         }
 
         // Activity: Issue Assigned (if user is assignee and not reporter)
-        if (issue.assignee?.id === currentUserId && issue.reporter.id !== currentUserId) {
+        // If reporter doesn't exist, just check if user is assignee
+        const isReporter = (issue as any).reporter?.id === currentUserId;
+        if (issue.assignee?.id === currentUserId && !isReporter) {
             activities.push({
                 id: `${issue.id}-assigned`,
                 type: ActivityType.ISSUE_ASSIGNED,
@@ -501,8 +508,8 @@ export function getUpcomingDueDates(
                 dueDate: issue.dueDate!,
                 priority: issue.priority,
                 status: issue.status,
-                projectName: issue.project.name,
-                projectId: issue.project.id,
+                projectName: issue.project?.name || 'Unknown Project',
+                projectId: issue.project?.id || '',
                 isOverdue: overdue,
                 daysUntilDue,
             };
