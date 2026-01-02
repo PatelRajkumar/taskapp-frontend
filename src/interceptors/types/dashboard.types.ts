@@ -112,6 +112,7 @@ export interface IssuesByType {
  * Data structure for pie/donut chart (Issues by Status)
  */
 export interface StatusChartData {
+    [key: string]: any; // Index signature for recharts compatibility
     name: string;     // Status label (e.g., "To Do", "In Progress", "Done")
     value: number;    // Issue count
     color: string;    // Chart color
