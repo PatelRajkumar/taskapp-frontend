@@ -4,6 +4,7 @@
  */
 
 import { Button, ErrorState, LoadingState } from '@/components/common';
+import { CommentSection } from '@/components/comments';
 import {
   IssueDetailDialog,
   IssueForm,
@@ -89,6 +90,7 @@ import {
 } from '@/utils/issuePermissions';
 
 import { useAuth } from '@/hooks/useAuth';
+import { Header } from '@/components/layout';
 
 type TabValue = 'overview' | 'members' | 'issues' | 'settings';
 
@@ -447,413 +449,427 @@ const ProjectDetailPage = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Breadcrumbs - EXISTING (keep as is) */}
-      <Breadcrumbs separator={<NavigateNext fontSize="small" />} sx={{ mb: 3 }}>
-        <Link component={RouterLink} to="/dashboard" underline="hover" color="inherit">
-          Dashboard
-        </Link>
-        <Link component={RouterLink} to="/projects" underline="hover" color="inherit">
-          Projects
-        </Link>
-        <Typography color="text.primary">{project.name}</Typography>
-      </Breadcrumbs>
+    <>
+      <Header />
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        {/* Breadcrumbs - EXISTING (keep as is) */}
+        <Breadcrumbs separator={<NavigateNext fontSize="small" />} sx={{ mb: 3 }}>
+          <Link component={RouterLink} to="/dashboard" underline="hover" color="inherit">
+            Dashboard
+          </Link>
+          <Link component={RouterLink} to="/projects" underline="hover" color="inherit">
+            Projects
+          </Link>
+          <Typography color="text.primary">{project.name}</Typography>
+        </Breadcrumbs>
 
-      {/* Project Header - EXISTING (keep as is) */}
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
-          <Box sx={{ flex: 1 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
-              <Typography variant="h4" component="h1">
-                {project.name}
-              </Typography>
-              <Chip
-                icon={project.visibility === 'PUBLIC' ? <Public /> : <Lock />}
-                label={project.visibility}
-                size="small"
-                color={project.visibility === 'PUBLIC' ? 'primary' : 'default'}
-              />
-              {project.isArchived && (
-                <Chip label="ARCHIVED" size="small" color="warning" />
-              )}
-              {currentUserRole && (
-                <Chip label={currentUserRole} size="small" color="secondary" variant="outlined" />
-              )}
-            </Box>
-
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-              Key: {project.key}
-            </Typography>
-
-            {project.description && (
-              <Typography variant="body1" sx={{ mb: 2 }}>
-                {project.description}
-              </Typography>
-            )}
-
-            <Box sx={{ display: 'flex', gap: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <People fontSize="small" color="action" />
-                <Typography variant="body2" color="text.secondary">
-                  {project.memberCount} members
+        {/* Project Header - EXISTING (keep as is) */}
+        <Paper sx={{ p: 3, mb: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+            <Box sx={{ flex: 1 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1 }}>
+                <Typography variant="h4" component="h1">
+                  {project.name}
                 </Typography>
+                <Chip
+                  icon={project.visibility === 'PUBLIC' ? <Public /> : <Lock />}
+                  label={project.visibility}
+                  size="small"
+                  color={project.visibility === 'PUBLIC' ? 'primary' : 'default'}
+                />
+                {project.isArchived && (
+                  <Chip label="ARCHIVED" size="small" color="warning" />
+                )}
+                {currentUserRole && (
+                  <Chip label={currentUserRole} size="small" color="secondary" variant="outlined" />
+                )}
               </Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                <Folder fontSize="small" color="action" />
-                <Typography variant="body2" color="text.secondary">
-                  {project.issueCount} issues
-                </Typography>
-              </Box>
-            </Box>
-          </Box>
 
-          {/* Actions Menu - EXISTING (keep as is) */}
-          {canEdit && (
-            <Box>
-              <IconButton onClick={handleMenuOpen}>
-                <MoreVert />
-              </IconButton>
-              <Menu anchorEl={anchorEl} open={menuOpen} onClose={handleMenuClose}>
-                {canEdit && (
-                  <MenuItem onClick={handleEdit}>
-                    <ListItemIcon>
-                      <Edit fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText>Edit Project</ListItemText>
-                  </MenuItem>
-                )}
-                {canArchive && (
-                  <MenuItem onClick={handleArchiveToggle}>
-                    <ListItemIcon>
-                      {project.isArchived ? <Unarchive fontSize="small" /> : <Archive fontSize="small" />}
-                    </ListItemIcon>
-                    <ListItemText>{project.isArchived ? 'Restore' : 'Archive'}</ListItemText>
-                  </MenuItem>
-                )}
-                {canDelete && (
-                  <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
-                    <ListItemIcon>
-                      <Delete fontSize="small" color="error" />
-                    </ListItemIcon>
-                    <ListItemText>Delete Project</ListItemText>
-                  </MenuItem>
-                )}
-                {isOwner && (
-                  <MenuItem onClick={handleTransferOwnership}>
-                    <ListItemIcon>
-                      <SwapHoriz fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText>Transfer Ownership</ListItemText>
-                  </MenuItem>
-                )}
-              </Menu>
-            </Box>
-          )}
-        </Box>
-      </Paper>
-
-      {/* Tabs - UPDATED: Added Issues tab */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={currentTab} onChange={(_, newValue) => setCurrentTab(newValue)}>
-          <Tab label="Overview" value="overview" />
-          <Tab label="Members" value="members" />
-          <Tab label="Issues" value="issues" />
-          {canEdit && <Tab label="Settings" value="settings" />}
-        </Tabs>
-      </Box>
-
-      {/* Tab Content - Overview - EXISTING (keep as is) */}
-      {currentTab === 'overview' && (
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Project Information
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Key: {project.key}
               </Typography>
-              <Divider sx={{ my: 2 }} />
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Created
-                  </Typography>
-                  <Typography variant="body2">
-                    {formatDistanceToNow(new Date(project.createdAt), { addSuffix: true })}
+
+              {project.description && (
+                <Typography variant="body1" sx={{ mb: 2 }}>
+                  {project.description}
+                </Typography>
+              )}
+
+              <Box sx={{ display: 'flex', gap: 3 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <People fontSize="small" color="action" />
+                  <Typography variant="body2" color="text.secondary">
+                    {project.memberCount} members
                   </Typography>
                 </Box>
-                {project.updatedAt && (
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Folder fontSize="small" color="action" />
+                  <Typography variant="body2" color="text.secondary">
+                    {project.issueCount} issues
+                  </Typography>
+                </Box>
+              </Box>
+            </Box>
+
+            {/* Actions Menu - EXISTING (keep as is) */}
+            {canEdit && (
+              <Box>
+                <IconButton onClick={handleMenuOpen}>
+                  <MoreVert />
+                </IconButton>
+                <Menu anchorEl={anchorEl} open={menuOpen} onClose={handleMenuClose}>
+                  {canEdit && (
+                    <MenuItem onClick={handleEdit}>
+                      <ListItemIcon>
+                        <Edit fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText>Edit Project</ListItemText>
+                    </MenuItem>
+                  )}
+                  {canArchive && (
+                    <MenuItem onClick={handleArchiveToggle}>
+                      <ListItemIcon>
+                        {project.isArchived ? <Unarchive fontSize="small" /> : <Archive fontSize="small" />}
+                      </ListItemIcon>
+                      <ListItemText>{project.isArchived ? 'Restore' : 'Archive'}</ListItemText>
+                    </MenuItem>
+                  )}
+                  {canDelete && (
+                    <MenuItem onClick={handleDelete} sx={{ color: 'error.main' }}>
+                      <ListItemIcon>
+                        <Delete fontSize="small" color="error" />
+                      </ListItemIcon>
+                      <ListItemText>Delete Project</ListItemText>
+                    </MenuItem>
+                  )}
+                  {isOwner && (
+                    <MenuItem onClick={handleTransferOwnership}>
+                      <ListItemIcon>
+                        <SwapHoriz fontSize="small" />
+                      </ListItemIcon>
+                      <ListItemText>Transfer Ownership</ListItemText>
+                    </MenuItem>
+                  )}
+                </Menu>
+              </Box>
+            )}
+          </Box>
+        </Paper>
+
+        {/* Tabs - UPDATED: Added Issues tab */}
+        <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+          <Tabs value={currentTab} onChange={(_, newValue) => setCurrentTab(newValue)}>
+            <Tab label="Overview" value="overview" />
+            <Tab label="Members" value="members" />
+            <Tab label="Issues" value="issues" />
+            {canEdit && <Tab label="Settings" value="settings" />}
+          </Tabs>
+        </Box>
+
+        {/* Tab Content - Overview - EXISTING (keep as is) */}
+        {currentTab === 'overview' && (
+          <Grid container spacing={3}>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Paper sx={{ p: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Project Information
+                </Typography>
+                <Divider sx={{ my: 2 }} />
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                   <Box>
                     <Typography variant="caption" color="text.secondary">
-                      Last Updated
+                      Created
                     </Typography>
                     <Typography variant="body2">
-                      {formatDistanceToNow(new Date(project.updatedAt), { addSuffix: true })}
+                      {formatDistanceToNow(new Date(project.createdAt), { addSuffix: true })}
                     </Typography>
                   </Box>
-                )}
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Created By
-                  </Typography>
-                  <Typography variant="body2">
-                    {project.createdBy.name} ({project.createdBy.email})
-                  </Typography>
-                </Box>
-              </Box>
-            </Paper>
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 6 }}>
-            <Paper sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Quick Stats
-              </Typography>
-              <Divider sx={{ my: 2 }} />
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Total Members
-                  </Typography>
-                  <Typography variant="h4">{project.memberCount}</Typography>
-                </Box>
-                <Box>
-                  <Typography variant="caption" color="text.secondary">
-                    Total Issues
-                  </Typography>
-                  <Typography variant="h4">{project.issueCount}</Typography>
-                </Box>
-              </Box>
-            </Paper>
-          </Grid>
-        </Grid>
-      )}
-
-      {/* Tab Content - Members - EXISTING (keep as is) */}
-      {currentTab === 'members' && (
-        <Box>
-          {canManageMembers && (
-            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end' }}>
-              <Button variant="primary" startIcon={<PersonAdd />} onClick={() => setAddMemberDialogOpen(true)}>
-                Add Member
-              </Button>
-            </Box>
-          )}
-
-          <MemberList
-            members={members}
-            currentUserRole={currentUserRole}
-            isLoading={membersLoading}
-            error={membersError?.message}
-            emptyMessage="No members yet"
-            emptyDescription="Add members to collaborate on this project"
-            onEditRole={canManageMembers ? handleEditRole : undefined}
-            onRemove={canManageMembers ? handleRemoveMember : undefined}
-            showActions={canManageMembers}
-          />
-        </Box>
-      )}
-
-      {/* Tab Content - Issues - NEW */}
-      {currentTab === 'issues' && (
-        <Box>
-          {/* Create Issue Button */}
-          <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end' }}>
-            <Button
-              variant="primary"
-              startIcon={<Add />}
-              onClick={() => setCreateIssueDialogOpen(true)}
-            >
-              Create Issue
-            </Button>
-          </Box>
-
-          {/* Issue List - CORRECTED: Use IssueSummary handlers */}
-          <IssueList
-            issues={issues}
-            isLoading={issuesLoading}
-            error={issuesError?.message}
-            emptyMessage={getIssuesEmptyMessage()}
-            emptyDescription={getIssuesEmptyDescription()}
-            onClick={handleIssueCardClick}
-            onEdit={handleEditIssueFromCard}
-            onDelete={handleDeleteIssueFromCard}
-            onStatusChange={handleIssueStatusChangeFromCard}
-            showActions={true}
-            showStatusDropdown={true}
-            canEditIssue={canUserEditIssueSummary}        // NEW
-            canDeleteIssue={canUserDeleteIssue}          // NEW (returns function that ignores issue param)
-            canChangeStatus={canUserChangeStatusSummary} // NEW
-          />
-
-          {/* Pagination */}
-          {issuesTotalPages > 1 && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-              <Pagination
-                count={issuesTotalPages}
-                page={issuePage + 1}
-                onChange={handleIssuePageChange}
-                color="primary"
-                size="large"
-                showFirstButton
-                showLastButton
-              />
-            </Box>
-          )}
-        </Box>
-      )}
-
-      {/* Tab Content - Settings - EXISTING (keep as is) */}
-      {currentTab === 'settings' && canEdit && (
-        <Paper sx={{ p: 3 }}>
-          <Typography variant="h6" gutterBottom>
-            Project Settings
-          </Typography>
-          <Divider sx={{ my: 2 }} />
-          <ProjectForm
-            mode="edit"
-            project={project}
-            onSubmit={handleUpdateProject}
-            isSubmitting={isUpdating}
-          />
-
-          {canDelete && (
-            <>
-              <Divider sx={{ my: 4 }} />
-              <Box>
-                <Typography variant="h6" gutterBottom color="error">
-                  Danger Zone
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                  These actions cannot be undone. Please be certain.
-                </Typography>
-                <Box sx={{ display: 'flex', gap: 2 }}>
-                  {canArchive && (
-                    <Button variant="outlined" onClick={handleArchiveToggle}>
-                      {project.isArchived ? 'Restore Project' : 'Archive Project'}
-                    </Button>
+                  {project.updatedAt && (
+                    <Box>
+                      <Typography variant="caption" color="text.secondary">
+                        Last Updated
+                      </Typography>
+                      <Typography variant="body2">
+                        {formatDistanceToNow(new Date(project.updatedAt), { addSuffix: true })}
+                      </Typography>
+                    </Box>
                   )}
-                  <Button variant="outlined" onClick={handleDelete} sx={{ color: 'error.main', borderColor: 'error.main' }}>
-                    Delete Project
-                  </Button>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Created By
+                    </Typography>
+                    <Typography variant="body2">
+                      {project.createdBy.name} ({project.createdBy.email})
+                    </Typography>
+                  </Box>
                 </Box>
+              </Paper>
+            </Grid>
+
+            <Grid size={{ xs: 12, md: 6 }}>
+              <Paper sx={{ p: 3 }}>
+                <Typography variant="h6" gutterBottom>
+                  Quick Stats
+                </Typography>
+                <Divider sx={{ my: 2 }} />
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Total Members
+                    </Typography>
+                    <Typography variant="h4">{project.memberCount}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">
+                      Total Issues
+                    </Typography>
+                    <Typography variant="h4">{project.issueCount}</Typography>
+                  </Box>
+                </Box>
+              </Paper>
+            </Grid>
+          </Grid>
+        )}
+
+        {/* Tab Content - Members - EXISTING (keep as is) */}
+        {currentTab === 'members' && (
+          <Box>
+            {canManageMembers && (
+              <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end' }}>
+                <Button variant="primary" startIcon={<PersonAdd />} onClick={() => setAddMemberDialogOpen(true)}>
+                  Add Member
+                </Button>
               </Box>
-            </>
-          )}
-        </Paper>
-      )}
+            )}
 
-      {/* Dialogs - EXISTING (keep as is) */}
-      <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6">Edit Project</Typography>
-          <IconButton onClick={() => setEditDialogOpen(false)}>
-            <Close />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          <ProjectForm
-            mode="edit"
-            project={project}
-            onSubmit={handleUpdateProject}
-            onCancel={() => setEditDialogOpen(false)}
-            isSubmitting={isUpdating}
-          />
-        </DialogContent>
-      </Dialog>
-
-      <AddMemberDialog
-        open={addMemberDialogOpen}
-        onClose={() => setAddMemberDialogOpen(false)}
-        onSubmit={handleAddMember}
-        isSubmitting={isAddingMember}
-        existingMemberIds={members.map((m) => m.user.id)}
-      />
-
-      <TransferOwnershipDialog
-        open={transferOwnershipDialogOpen}
-        onClose={() => setTransferOwnershipDialogOpen(false)}
-        onSubmit={handleTransferOwnershipSubmit}
-        isSubmitting={isTransferring}
-        projectName={project.name}
-        members={members}
-      />
-
-      <EditMemberRoleDialog
-        open={!!editingMember}
-        onClose={() => setEditingMember(null)}
-        onSubmit={handleUpdateMemberRole}
-        isSubmitting={isUpdatingRole}
-        member={editingMember}
-      />
-
-      {/* NEW Issue Dialogs */}
-      <Dialog
-        open={createIssueDialogOpen}
-        onClose={() => setCreateIssueDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6">Create New Issue</Typography>
-          <IconButton onClick={() => setCreateIssueDialogOpen(false)}>
-            <Close />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          <Box sx={{ pt: 2 }}>
-            <IssueForm
-              mode="create"
-              projectMembers={members}
-              onSubmit={handleCreateIssue}
-              onCancel={() => setCreateIssueDialogOpen(false)}
-              isSubmitting={isCreatingIssue}
+            <MemberList
+              members={members}
+              currentUserRole={currentUserRole}
+              isLoading={membersLoading}
+              error={membersError?.message}
+              emptyMessage="No members yet"
+              emptyDescription="Add members to collaborate on this project"
+              onEditRole={canManageMembers ? handleEditRole : undefined}
+              onRemove={canManageMembers ? handleRemoveMember : undefined}
+              showActions={canManageMembers}
             />
           </Box>
-        </DialogContent>
-      </Dialog>
+        )}
 
-      <Dialog
-        open={!!editingIssue}
-        onClose={() => setEditingIssue(null)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Typography variant="h6">Edit Issue</Typography>
-          <IconButton onClick={() => setEditingIssue(null)}>
-            <Close />
-          </IconButton>
-        </DialogTitle>
-        <DialogContent>
-          {editingIssue && (
+        {/* Tab Content - Issues - NEW */}
+        {currentTab === 'issues' && (
+          <Box>
+            {/* Create Issue Button */}
+            <Box sx={{ mb: 3, display: 'flex', justifyContent: 'flex-end' }}>
+              <Button
+                variant="primary"
+                startIcon={<Add />}
+                onClick={() => setCreateIssueDialogOpen(true)}
+              >
+                Create Issue
+              </Button>
+            </Box>
+
+            {/* Issue List - CORRECTED: Use IssueSummary handlers */}
+            <IssueList
+              issues={issues}
+              isLoading={issuesLoading}
+              error={issuesError?.message}
+              emptyMessage={getIssuesEmptyMessage()}
+              emptyDescription={getIssuesEmptyDescription()}
+              onClick={handleIssueCardClick}
+              onEdit={handleEditIssueFromCard}
+              onDelete={handleDeleteIssueFromCard}
+              onStatusChange={handleIssueStatusChangeFromCard}
+              showActions={true}
+              showStatusDropdown={true}
+              canEditIssue={canUserEditIssueSummary}        // NEW
+              canDeleteIssue={canUserDeleteIssue}          // NEW (returns function that ignores issue param)
+              canChangeStatus={canUserChangeStatusSummary} // NEW
+            />
+
+            {/* Pagination */}
+            {issuesTotalPages > 1 && (
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                <Pagination
+                  count={issuesTotalPages}
+                  page={issuePage + 1}
+                  onChange={handleIssuePageChange}
+                  color="primary"
+                  size="large"
+                  showFirstButton
+                  showLastButton
+                />
+              </Box>
+            )}
+          </Box>
+        )}
+
+        {/* Tab Content - Settings - EXISTING (keep as is) */}
+        {currentTab === 'settings' && canEdit && (
+          <Paper sx={{ p: 3 }}>
+            <Typography variant="h6" gutterBottom>
+              Project Settings
+            </Typography>
+            <Divider sx={{ my: 2 }} />
+            <ProjectForm
+              mode="edit"
+              project={project}
+              onSubmit={handleUpdateProject}
+              isSubmitting={isUpdating}
+            />
+
+            {canDelete && (
+              <>
+                <Divider sx={{ my: 4 }} />
+                <Box>
+                  <Typography variant="h6" gutterBottom color="error">
+                    Danger Zone
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                    These actions cannot be undone. Please be certain.
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 2 }}>
+                    {canArchive && (
+                      <Button variant="outlined" onClick={handleArchiveToggle}>
+                        {project.isArchived ? 'Restore Project' : 'Archive Project'}
+                      </Button>
+                    )}
+                    <Button variant="outlined" onClick={handleDelete} sx={{ color: 'error.main', borderColor: 'error.main' }}>
+                      Delete Project
+                    </Button>
+                  </Box>
+                </Box>
+              </>
+            )}
+          </Paper>
+        )}
+
+        {/* Dialogs - EXISTING (keep as is) */}
+        <Dialog open={editDialogOpen} onClose={() => setEditDialogOpen(false)} maxWidth="sm" fullWidth>
+          <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="h6">Edit Project</Typography>
+            <IconButton onClick={() => setEditDialogOpen(false)}>
+              <Close />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent>
+            <ProjectForm
+              mode="edit"
+              project={project}
+              onSubmit={handleUpdateProject}
+              onCancel={() => setEditDialogOpen(false)}
+              isSubmitting={isUpdating}
+            />
+          </DialogContent>
+        </Dialog>
+
+        <AddMemberDialog
+          open={addMemberDialogOpen}
+          onClose={() => setAddMemberDialogOpen(false)}
+          onSubmit={handleAddMember}
+          isSubmitting={isAddingMember}
+          existingMemberIds={members.map((m) => m.user.id)}
+        />
+
+        <TransferOwnershipDialog
+          open={transferOwnershipDialogOpen}
+          onClose={() => setTransferOwnershipDialogOpen(false)}
+          onSubmit={handleTransferOwnershipSubmit}
+          isSubmitting={isTransferring}
+          projectName={project.name}
+          members={members}
+        />
+
+        <EditMemberRoleDialog
+          open={!!editingMember}
+          onClose={() => setEditingMember(null)}
+          onSubmit={handleUpdateMemberRole}
+          isSubmitting={isUpdatingRole}
+          member={editingMember}
+        />
+
+        {/* NEW Issue Dialogs */}
+        <Dialog
+          open={createIssueDialogOpen}
+          onClose={() => setCreateIssueDialogOpen(false)}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="h6">Create New Issue</Typography>
+            <IconButton onClick={() => setCreateIssueDialogOpen(false)}>
+              <Close />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent>
             <Box sx={{ pt: 2 }}>
               <IssueForm
-                mode="edit"
-                issue={editingIssue}
+                mode="create"
                 projectMembers={members}
-                onSubmit={handleUpdateIssue}
-                onCancel={() => setEditingIssue(null)}
-                isSubmitting={isUpdatingIssue}
+                onSubmit={handleCreateIssue}
+                onCancel={() => setCreateIssueDialogOpen(false)}
+                isSubmitting={isCreatingIssue}
               />
             </Box>
-          )}
-        </DialogContent>
-      </Dialog>
+          </DialogContent>
+        </Dialog>
 
-      {/* Issue Detail Dialog - CORRECTED: Use IssueResponse handlers */}
-      <IssueDetailDialog
-        open={!!selectedIssueKey}
-        onClose={handleCloseIssueDetail}
-        issue={selectedIssue || null}
-        onEdit={handleEditIssueFromDetail}
-        onDelete={handleDeleteIssueFromDetail}
-        onStatusChange={handleIssueStatusChangeFromDetail}
-        isLoading={isLoadingIssue}
-        canEdit={selectedIssue ? canUserEditIssueResponse(selectedIssue) : false}           // NEW
-        canDelete={selectedIssue ? canUserDeleteIssue() : false}                            // NEW
-        canChangeStatus={selectedIssue ? canUserChangeStatusResponse(selectedIssue) : false} // NEW
+        <Dialog
+          open={!!editingIssue}
+          onClose={() => setEditingIssue(null)}
+          maxWidth="md"
+          fullWidth
+          scroll="paper"
+        >
+          <DialogTitle sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Typography variant="h6">Edit Issue</Typography>
+            <IconButton onClick={() => setEditingIssue(null)}>
+              <Close />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent>
+            {editingIssue && (
+              <Box sx={{ pt: 2 }}>
+                <IssueForm
+                  mode="edit"
+                  issue={editingIssue}
+                  projectMembers={members}
+                  onSubmit={handleUpdateIssue}
+                  onCancel={() => setEditingIssue(null)}
+                  isSubmitting={isUpdatingIssue}
+                />
 
-      />
-    </Container>
+                {/* Comments Section - Show in edit mode as well */}
+                <Divider sx={{ my: 4 }} />
+                {currentUserRole ? (
+                  <CommentSection
+                    issueId={editingIssue.id}
+                    projectId={editingIssue.project.id}
+                    userRole={currentUserRole}
+                  />
+                ) : null}
+              </Box>
+            )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Issue Detail Dialog - CORRECTED: Use IssueResponse handlers */}
+        <IssueDetailDialog
+          open={!!selectedIssueKey}
+          onClose={handleCloseIssueDetail}
+          issue={selectedIssue || null}
+          onEdit={handleEditIssueFromDetail}
+          onDelete={handleDeleteIssueFromDetail}
+          onStatusChange={handleIssueStatusChangeFromDetail}
+          isLoading={isLoadingIssue}
+          canEdit={selectedIssue ? canUserEditIssueResponse(selectedIssue) : false}           // NEW
+          canDelete={selectedIssue ? canUserDeleteIssue() : false}                            // NEW
+          canChangeStatus={selectedIssue ? canUserChangeStatusResponse(selectedIssue) : false} // NEW
+          userRole={currentUserRole}
+        />
+      </Container>
+    </>
   );
 };
 

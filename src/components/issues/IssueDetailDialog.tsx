@@ -1,6 +1,6 @@
 /**
  * IssueDetailDialog Component
- * Dialog for displaying full issue details
+ * Dialog for displaying full issue details with inline comments
  */
 
 import {
@@ -12,7 +12,6 @@ import {
   Typography,
   IconButton,
   Divider,
-  Chip,
   Select,
   MenuItem,
   FormControl,
@@ -32,8 +31,11 @@ import { RichTextDisplay } from './RichTextDisplay';
 import { IssueStatusBadge } from './IssueStatusBadge';
 import { IssuePriorityBadge } from './IssuePriorityBadge';
 import { IssueTypeBadge } from './IssueTypeBadge';
+import { CommentSection } from '@/components/comments'; // NEW: Import CommentSection
 import type { IssueResponse } from '@/interceptors/types/issue.types';
 import type { IssueStatus } from '@/utils/constants';
+import type { ProjectRole } from '@/interceptors/types/projectMember.types'; // NEW: Import ProjectRole
+import { AttachmentSection } from '@/components/attachments';
 
 export interface IssueDetailDialogProps {
   /**
@@ -64,22 +66,55 @@ export interface IssueDetailDialogProps {
    * Whether currently loading
    */
   isLoading?: boolean;
-
+  /**
+   * Whether user can edit issue
+   */
   canEdit?: boolean;
+  /**
+   * Whether user can delete issue
+   */
   canDelete?: boolean;
+  /**
+   * Whether user can change status
+   */
   canChangeStatus?: boolean;
+  /**
+ * Current user's role in project (for comment and attachment permissions)
+ */
+  userRole?: ProjectRole;
 }
 
 /**
- * IssueDetailDialog - Full issue details in a dialog
+ * IssueDetailDialog - Full issue details in a dialog with inline attachments and comments
  * 
  * Features:
  * - Full issue information
  * - Rich text description display (HTML rendered)
  * - Status change dropdown
  * - Edit and delete actions
+ * - Inline attachments section (Jira-style) [NEW]
+ * - Inline comments section (Jira-style)
  * - Responsive design
  * - Close on backdrop click or ESC
+ * 
+ * Layout:
+ * ┌─────────────────────────────────┐
+ * │ Issue Header (Title, Key)       │
+ * ├─────────────────────────────────┤
+ * │ Badges (Type, Priority, Status) │
+ * │ Description                     │
+ * │ Details (Assignee, Reporter)    │
+ * ├─────────────────────────────────┤
+ * │ Attachments Section [NEW]      │
+ * │ - Upload zone                   │
+ * │ - Attachment list               │
+ * │ - Pagination                    │
+ * ├─────────────────────────────────┤
+ * │ Comments Section                │
+ * │ - Create form                   │
+ * │ - Comment list                  │
+ * │ - Pagination                    │
+ * └─────────────────────────────────┘
  * 
  * @example
  * <IssueDetailDialog
@@ -89,6 +124,7 @@ export interface IssueDetailDialogProps {
  *   onEdit={handleEdit}
  *   onDelete={handleDelete}
  *   onStatusChange={handleStatusChange}
+ *   userRole={userRole}
  * />
  */
 export const IssueDetailDialog = ({
@@ -99,11 +135,12 @@ export const IssueDetailDialog = ({
   onDelete,
   onStatusChange,
   isLoading = false,
-  canEdit = true,         // NEW: Default to true for backward compatibility
-  canDelete = true,       // NEW: Default to true for backward compatibility
-  canChangeStatus = true, // NEW: Default to true for backward compatibility
+  canEdit = true,
+  canDelete = true,
+  canChangeStatus = true,
+  userRole, // NEW: User role for comments
 }: IssueDetailDialogProps) => {
-  console.log('[IssueDetailDialog] Dialog open:', open, 'Issue:', issue?.key);
+  console.log('[IssueDetailDialog] Dialog open:', open, 'Issue:', issue?.key, 'UserRole:', userRole);
 
   const handleEdit = () => {
     if (issue) {
@@ -131,7 +168,7 @@ export const IssueDetailDialog = ({
     return null;
   }
 
-  // Check if due date is overdue
+  // Check if due date is overdue or due today
   const isDueToday = issue?.dueDate && new Date(issue.dueDate).toDateString() === new Date().toDateString();
   const isOverdue = issue?.dueDate && new Date(issue.dueDate) < new Date() && issue?.status !== 'DONE';
 
@@ -172,6 +209,8 @@ export const IssueDetailDialog = ({
           </Box>
         ) : issue ? (
           <Box>
+            {/* ========== ISSUE DETAILS SECTION ========== */}
+
             {/* Badges Row */}
             <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap' }}>
               <IssueTypeBadge type={issue.type} size="medium" />
@@ -304,6 +343,39 @@ export const IssueDetailDialog = ({
                 </Box>
               </Box>
             </Box>
+            <Divider sx={{ my: 4 }} />
+
+            {/* Only show attachments if userRole is provided */}
+            {userRole ? (
+              <AttachmentSection
+                issueId={issue.id}
+                projectId={issue.project.id}
+                userRole={userRole}
+              />
+            ) : (
+              <Box sx={{ py: 2, textAlign: 'center' }}>
+                <Typography variant="body2" color="text.secondary">
+                  Attachments are not available
+                </Typography>
+              </Box>
+            )}
+            {/* ========== COMMENTS SECTION (NEW) ========== */}
+            <Divider sx={{ my: 4 }} />
+
+            {/* Only show comments if userRole is provided */}
+            {userRole ? (
+              <CommentSection
+                issueId={issue.id}
+                projectId={issue.project.id}
+                userRole={userRole}
+              />
+            ) : (
+              <Box sx={{ py: 2, textAlign: 'center' }}>
+                <Typography variant="body2" color="text.secondary">
+                  Comments are not available
+                </Typography>
+              </Box>
+            )}
           </Box>
         ) : null}
       </DialogContent>

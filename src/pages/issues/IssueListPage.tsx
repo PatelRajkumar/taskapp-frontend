@@ -25,6 +25,7 @@ import {
 } from '@/components/issues';
 import { useFilteredIssues, useIssueByKey } from '@/hooks/useIssues';
 import { useAuth } from '@/hooks/useAuth';
+import { Header } from '@/components/layout';
 import type { IssueFilterParams, IssueSummary } from '@/interceptors/types/issue.types';
 import type { IssueStatus, IssueType, IssuePriority } from '@/utils/constants';
 
@@ -149,66 +150,69 @@ const IssueListPage = () => {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      {/* Header */}
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Assignment color="primary" sx={{ fontSize: 40 }} />
-          <Typography variant="h3" component="h1">
-            All Issues
-          </Typography>
+    <>
+      <Header />
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        {/* Header */}
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Assignment color="primary" sx={{ fontSize: 40 }} />
+            <Typography variant="h3" component="h1">
+              All Issues
+            </Typography>
+          </Box>
         </Box>
-      </Box>
 
-      {/* Filters */}
-      <Paper sx={{ p: 2, mb: 3 }}>
-        <IssueFilters
-          selectedStatus={selectedStatus}
-          selectedType={selectedType}
-          selectedPriority={selectedPriority}
-          onFiltersChange={handleFiltersChange}
-          onClearFilters={handleClearFilters}
-        />
-      </Paper>
-
-      {/* Issue List - Cards are READ-ONLY (no actions) */}
-      <IssueList
-        issues={issues}
-        isLoading={isLoading}
-        error={error?.message}
-        emptyMessage={getEmptyMessage()}
-        emptyDescription={getEmptyDescription()}
-        onClick={handleCardClick}
-        showActions={false}         // ✅ No edit/delete menu on cards
-        showStatusDropdown={false}  // ✅ No status dropdown on cards
-      />
-
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-          <Pagination
-            count={totalPages}
-            page={page + 1}
-            onChange={handlePageChange}
-            color="primary"
-            size="large"
-            showFirstButton
-            showLastButton
+        {/* Filters */}
+        <Paper sx={{ p: 2, mb: 3 }}>
+          <IssueFilters
+            selectedStatus={selectedStatus}
+            selectedType={selectedType}
+            selectedPriority={selectedPriority}
+            onFiltersChange={handleFiltersChange}
+            onClearFilters={handleClearFilters}
           />
-        </Box>
-      )}
+        </Paper>
 
-      {/* Issue Detail Dialog - READ-ONLY (no callbacks) */}
-      <IssueDetailDialog
-        open={!!selectedIssueKey}
-        onClose={handleCloseDetail}
-        issue={selectedIssue || null}
-        // ❌ No onEdit callback - dialog will hide edit button
-        // ❌ No onDelete callback - dialog will hide delete button
-        // ❌ No onStatusChange callback - dialog will hide status dropdown
-        isLoading={isLoadingIssue}
-      />
-    </Container>
+        {/* Issue List - Cards are READ-ONLY (no actions) */}
+        <IssueList
+          issues={issues}
+          isLoading={isLoading}
+          error={error?.message}
+          emptyMessage={getEmptyMessage()}
+          emptyDescription={getEmptyDescription()}
+          onClick={handleCardClick}
+          showActions={false}         // ✅ No edit/delete menu on cards
+          showStatusDropdown={false}  // ✅ No status dropdown on cards
+        />
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+            <Pagination
+              count={totalPages}
+              page={page + 1}
+              onChange={handlePageChange}
+              color="primary"
+              size="large"
+              showFirstButton
+              showLastButton
+            />
+          </Box>
+        )}
+
+        {/* Issue Detail Dialog - READ-ONLY (no callbacks) */}
+        <IssueDetailDialog
+          open={!!selectedIssueKey}
+          onClose={handleCloseDetail}
+          issue={selectedIssue || null}
+          // ❌ No onEdit callback - dialog will hide edit button
+          // ❌ No onDelete callback - dialog will hide delete button
+          // ❌ No onStatusChange callback - dialog will hide status dropdown
+          isLoading={isLoadingIssue}
+        />
+      </Container>
+    </>
   );
 };
 

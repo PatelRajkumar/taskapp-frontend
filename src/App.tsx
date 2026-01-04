@@ -16,7 +16,7 @@ import ResendVerificationPage from './pages/auth/ResendVerificationPage';
 import ProfilePage from './pages/profile/ProfilePage';
 
 // Protected Pages
-import DashboardPage from './pages/DashboardPage';
+import DashboardPage from './pages/dashboard/DashboardPage';
 import UserManagementPage from './pages/UserManagementPage';
 import ProjectManagementPage from './pages/ProjectManagementPage';
 

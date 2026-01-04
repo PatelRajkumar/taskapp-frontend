@@ -45,3 +45,7 @@ coverage
 # Misc
 .cache
 .temp
+
+# Prevent committing generated Vite config files
+vite.config.js
+vite.config.d.ts
